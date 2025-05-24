@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
-import { db, first, OAuthSessions, Sessions } from './db';
+import { first, OAuthSessions, Sessions } from './db';
+import type { Database } from './db';
 
-export const getSession = async (session: string | undefined) => {
+export const getSession = async (db: Database, session: string | undefined) => {
   if (!session) {
     return null;
   }
@@ -9,7 +10,7 @@ export const getSession = async (session: string | undefined) => {
   return (await db.select().from(Sessions).where(eq(Sessions.token, session)).then(first)) ?? null;
 };
 
-export const getOAuthSession = async (session: string | null) => {
+export const getOAuthSession = async (db: Database, session: string | null) => {
   if (!session) {
     return null;
   }

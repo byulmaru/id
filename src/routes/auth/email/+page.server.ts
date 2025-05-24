@@ -8,9 +8,9 @@ import {
   AccountEmails,
   AccountEmailVerifications,
   Accounts,
-  db,
   first,
   firstOrThrow,
+  getDatabase,
   Sessions,
 } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
@@ -20,12 +20,14 @@ const schema = z.object({
   code: z.string().regex(/^\d{6}$/, '코드 형식이 맞지 않아요'),
 });
 
-export const load = async ({ url }) => {
+export const load = async ({ url, platform }) => {
   const verificationId = url.searchParams.get('verificationId');
 
   if (!verificationId) {
     throw error(400, 'Verification ID is required');
   }
+
+  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const verification = await db
     .select({
@@ -49,12 +51,14 @@ export const load = async ({ url }) => {
 };
 
 export const actions = {
-  default: async ({ cookies, request, url }) => {
+  default: async ({ cookies, request, url, platform }) => {
     const form = await superValidate(request, zod(schema));
 
     if (!form.valid) {
       return fail(400, { form });
     }
+
+    const db = await getDatabase(platform!.env.DATABASE_URL);
 
     const verification = await db
       .select({

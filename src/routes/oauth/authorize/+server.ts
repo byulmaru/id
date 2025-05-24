@@ -3,9 +3,9 @@ import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import {
-  db,
   firstOrThrow,
   firstOrThrowWith,
+  getDatabase,
   OAuthApplicationRedirectUris,
   OAuthApplications,
   OAuthApplicationTokens,
@@ -13,10 +13,12 @@ import {
 import { getSession } from '$lib/server/session';
 import { OAuthAuthorizeSchema } from './schema';
 
-export const GET = async ({ cookies, url }) => {
+export const GET = async ({ cookies, url, platform }) => {
   const { client_id, redirect_uri, state } = OAuthAuthorizeSchema.parse(
     Object.fromEntries(url.searchParams),
   );
+
+  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const application = await db
     .select({
@@ -38,7 +40,7 @@ export const GET = async ({ cookies, url }) => {
     throw error(400, { message: 'invalid_redirect_uri' });
   }
 
-  const session = await getSession(cookies.get('session'));
+  const session = await getSession(db, cookies.get('session'));
   if (session) {
     return redirect(
       303,

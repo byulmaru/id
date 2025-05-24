@@ -9,9 +9,9 @@ import {
   AccountEmails,
   AccountEmailVerifications,
   Accounts,
-  db,
   first,
   firstOrThrow,
+  getDatabase,
 } from '$lib/server/db';
 import { sendEmail } from '$lib/server/email';
 import Login from '$lib/server/email/templates/Login';
@@ -25,12 +25,14 @@ export const load = async () => {
 };
 
 export const actions = {
-  default: async ({ request, url }) => {
+  default: async ({ request, url, platform }) => {
     const form = await superValidate(request, zod(schema));
 
     if (!form.valid) {
       return fail(400, { form });
     }
+
+    const db = await getDatabase(platform!.env.DATABASE_URL!);
 
     const email = form.data.email;
     const normalizedEmail = normalizeEmail(email);

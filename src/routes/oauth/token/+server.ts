@@ -3,8 +3,8 @@ import dayjs from 'dayjs';
 import { and, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import {
-  db,
   firstOrThrow,
+  getDatabase,
   OAuthApplicationRedirectUris,
   OAuthApplications,
   OAuthApplicationSecrets,
@@ -21,10 +21,12 @@ const schema = z.object({
   redirect_uri: z.string().url().transform(uriToRedirectUrl),
 });
 
-export const GET = async ({ url }) => {
+export const GET = async ({ url, platform }) => {
   const { code, client_id, client_secret, redirect_uri } = schema.parse(
     Object.fromEntries(url.searchParams),
   );
+
+  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const applicationToken = await db
     .select({
