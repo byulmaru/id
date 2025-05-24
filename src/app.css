@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-text-light: oklch(98.5% 0 0);
+  --color-text-dark: oklch(14.5% 0 0);
+
+  --color-primary: oklch(49.1% 0.27 292.581);
+  --color-primary-foreground: var(--color-text-light);
+
+  --color-secondary: oklch(27.8% 0.033 256.848);
+  --color-secondary-foreground: var(--color-text-light);
+}
+
+* {
+  transition: color 0.2s ease-in-out;
+}
