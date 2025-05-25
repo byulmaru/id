@@ -4,7 +4,7 @@
   import TextInput from '$lib/components/TextInput.svelte';
 
   const { data } = $props();
-  const { form, enhance } = superForm(data.form, {
+  const { form, enhance, submitting } = superForm(data.form, {
     resetForm: false,
     onResult: ({ result }) => {
       console.log(result);
@@ -30,7 +30,7 @@
         type="text"
         bind:value={$form.code}
       />
-      <Button class="w-full" type="submit">인증하기</Button>
+      <Button class="w-full" aria-busy={$submitting} type="submit">인증하기</Button>
     </form>
   </div>
 </div>

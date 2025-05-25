@@ -108,7 +108,7 @@ export const actions = {
 
       throw redirect(303, `/auth/email?verificationId=${verification.id}`);
     } else {
-      // TODO: 회원가입 구현
+      // TODO: 다른 로그인 방법 구현
     }
     return { form, foo: 'bar' };
   },

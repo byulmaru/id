@@ -4,7 +4,7 @@
   import TextInput from '$lib/components/TextInput.svelte';
 
   const { data } = $props();
-  const { form, enhance } = superForm(data.form, {
+  const { form, enhance, submitting } = superForm(data.form, {
     resetForm: false,
     onResult: ({ result }) => {
       console.log(result);
@@ -25,7 +25,7 @@
         type="email"
         bind:value={$form.email}
       />
-      <Button class="w-full" type="submit">로그인 / 회원가입</Button>
+      <Button class="w-full" aria-busy={$submitting} type="submit">로그인 / 회원가입</Button>
     </form>
   </div>
 </div>
