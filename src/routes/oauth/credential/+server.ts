@@ -7,7 +7,8 @@ import { getOAuthSession } from '$lib/server/session';
 export const GET = async ({ request, platform }) => {
   const db = await getDatabase(platform!.env.DATABASE_URL);
 
-  const session = await getOAuthSession(db, request.headers.get('Authorization'));
+  const token = request.headers.get('Authorization')?.match(/^Bearer\s+(.*)$/)?.[1] ?? null;
+  const session = await getOAuthSession(db, token);
   if (!session) {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
