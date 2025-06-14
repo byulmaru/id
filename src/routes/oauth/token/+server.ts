@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import dayjs from 'dayjs';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, gt } from 'drizzle-orm';
 import { z } from 'zod';
 import {
   firstOrThrow,
@@ -49,7 +49,7 @@ export const POST = async ({ request, platform }) => {
         eq(OAuthApplicationTokens.token, code),
         eq(OAuthApplications.id, client_id),
         eq(OAuthApplicationRedirectUris.redirectUri, redirect_uri.toString()),
-        lt(OAuthApplicationTokens.expiresAt, dayjs()),
+        gt(OAuthApplicationTokens.expiresAt, dayjs()),
       ),
     )
     .then(firstOrThrow);
