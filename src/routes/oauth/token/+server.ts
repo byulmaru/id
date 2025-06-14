@@ -21,9 +21,9 @@ const schema = z.object({
   redirect_uri: z.string().url().transform(uriToRedirectUrl),
 });
 
-export const GET = async ({ url, platform }) => {
+export const POST = async ({ request, platform }) => {
   const { code, client_id, client_secret, redirect_uri } = schema.parse(
-    Object.fromEntries(url.searchParams),
+    Object.fromEntries(await request.formData()),
   );
 
   const db = await getDatabase(platform!.env.DATABASE_URL);
