@@ -22,9 +22,7 @@ const schema = z.object({
 });
 
 export const POST = async ({ request, platform }) => {
-  const { code, client_id, client_secret, redirect_uri } = schema.parse(
-    Object.fromEntries(await request.formData()),
-  );
+  const { code, client_id, client_secret, redirect_uri } = schema.parse(await request.json());
 
   const db = await getDatabase(platform!.env.DATABASE_URL);
 
