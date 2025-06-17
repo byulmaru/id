@@ -16,6 +16,7 @@ export const GET = async ({ request, platform }) => {
   const user = await db
     .select({
       id: Accounts.id,
+      name: Accounts.name,
       email: AccountEmails.email,
     })
     .from(Accounts)
@@ -25,6 +26,7 @@ export const GET = async ({ request, platform }) => {
 
   return json({
     id: user.id,
+    name: user.name,
     email: user.email,
   });
 };

@@ -1,8 +1,9 @@
 import { json } from '@sveltejs/kit';
 import dayjs from 'dayjs';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import {
+  first,
   firstOrThrow,
   getDatabase,
   OAuthApplicationRedirectUris,
@@ -27,32 +28,56 @@ export const POST = async ({ request, platform }) => {
   const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const applicationToken = await db
-    .select({
+    .delete(OAuthApplicationTokens)
+    .where(eq(OAuthApplicationTokens.token, code))
+    .returning({
+      id: OAuthApplicationTokens.id,
       applicationId: OAuthApplicationTokens.applicationId,
       accountId: OAuthApplicationTokens.accountId,
+      expiresAt: OAuthApplicationTokens.expiresAt,
     })
-    .from(OAuthApplicationTokens)
+    .then(first);
+
+  if (!applicationToken || dayjs(applicationToken.expiresAt).isBefore(dayjs())) {
+    return json({ error: 'Invalid or expired code' }, { status: 400 });
+  }
+
+  const application = await db
+    .select({
+      id: OAuthApplications.id,
+      secret: OAuthApplicationSecrets.secret,
+    })
+    .from(OAuthApplications)
     .innerJoin(
       OAuthApplicationSecrets,
       and(
-        eq(OAuthApplicationTokens.applicationId, OAuthApplicationSecrets.applicationId),
+        eq(OAuthApplications.id, OAuthApplicationSecrets.applicationId),
         eq(OAuthApplicationSecrets.secret, client_secret),
       ),
     )
-    .innerJoin(OAuthApplications, eq(OAuthApplicationTokens.applicationId, OAuthApplications.id))
-    .innerJoin(
-      OAuthApplicationRedirectUris,
-      eq(OAuthApplicationTokens.redirectUriId, OAuthApplicationRedirectUris.id),
-    )
+    .where(eq(OAuthApplications.id, client_id))
+    .then(first);
+
+  if (!application || application.id !== applicationToken.applicationId) {
+    return json({ error: 'Invalid client' }, { status: 400 });
+  }
+
+  const redirectUri = await db
+    .select({
+      id: OAuthApplicationRedirectUris.id,
+    })
+    .from(OAuthApplicationRedirectUris)
     .where(
       and(
-        eq(OAuthApplicationTokens.token, code),
-        eq(OAuthApplications.id, client_id),
+        eq(OAuthApplicationRedirectUris.applicationId, applicationToken.applicationId),
         eq(OAuthApplicationRedirectUris.redirectUri, redirect_uri.toString()),
-        gt(OAuthApplicationTokens.expiresAt, dayjs()),
       ),
     )
-    .then(firstOrThrow);
+    .then(first);
+
+  if (!redirectUri) {
+    return json({ error: 'Invalid redirect_uri' }, { status: 400 });
+  }
 
   const session = await db
     .insert(OAuthSessions)

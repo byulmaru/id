@@ -1,12 +1,13 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import dayjs from 'dayjs';
-import { and, eq } from 'drizzle-orm';
-import { setError, superValidate } from 'sveltekit-superforms';
+import { and, eq, ne } from 'drizzle-orm';
+import { superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
 import {
   AccountEmails,
   AccountEmailVerifications,
+  Accounts,
   first,
   firstOrThrow,
   getDatabase,
@@ -15,15 +16,16 @@ import {
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
 
 const schema = z.object({
-  verificationId: z.string(),
-  code: z.string().regex(/^\d{6}$/, '코드 형식이 맞지 않아요'),
+  name: z.string().min(1, '이름을 입력해주세요').max(50, '이름은 50자 이하로 입력해주세요'),
+  termsAgreed: z.boolean().refine((val) => val === true, '서비스 이용약관에 동의해주세요'),
+  privacyAgreed: z.boolean().refine((val) => val === true, '개인정보 처리방침에 동의해주세요'),
 });
 
-export const load = async ({ url, platform }) => {
-  const verificationId = url.searchParams.get('verificationId');
+export const load = async ({ cookies, platform }) => {
+  const verificationId = cookies.get('signup_verification');
 
   if (!verificationId) {
-    throw error(400, 'Verification ID is required');
+    throw redirect(303, '/auth');
   }
 
   const db = await getDatabase(platform!.env.DATABASE_URL);
@@ -31,20 +33,31 @@ export const load = async ({ url, platform }) => {
   const verification = await db
     .select({
       id: AccountEmailVerifications.id,
-      email: AccountEmails.email,
+      accountEmail: {
+        id: AccountEmails.id,
+        email: AccountEmails.email,
+        normalizedEmail: AccountEmails.normalizedEmail,
+        accountId: AccountEmails.accountId,
+      },
     })
     .from(AccountEmailVerifications)
-    .where(eq(AccountEmailVerifications.id, verificationId))
     .innerJoin(AccountEmails, eq(AccountEmailVerifications.accountEmailId, AccountEmails.id))
-    .then(firstOrThrow);
+    .where(eq(AccountEmailVerifications.id, verificationId))
+    .then(first);
 
-  const form = await superValidate(
-    { verificationId: verification.id, code: url.searchParams.get('code') ?? '' },
-    zod(schema),
-  );
+  if (!verification) {
+    throw error(400, '유효하지 않은 접근입니다');
+  }
+
+  if (verification.accountEmail.accountId) {
+    // 이미 계정이 있는 경우
+    throw redirect(303, '/');
+  }
+
+  const form = await superValidate(zod(schema));
 
   return {
-    email: verification.email,
+    email: verification.accountEmail.email,
     form,
   };
 };
@@ -57,12 +70,16 @@ export const actions = {
       return fail(400, { form });
     }
 
+    const verificationId = cookies.get('signup_verification');
+    if (!verificationId) {
+      throw redirect(303, '/auth');
+    }
+
     const db = await getDatabase(platform!.env.DATABASE_URL);
 
     const verification = await db
       .select({
         id: AccountEmailVerifications.id,
-        expiresAt: AccountEmailVerifications.expiresAt,
         accountEmail: {
           id: AccountEmails.id,
           normalizedEmail: AccountEmails.normalizedEmail,
@@ -71,41 +88,49 @@ export const actions = {
       })
       .from(AccountEmailVerifications)
       .innerJoin(AccountEmails, eq(AccountEmailVerifications.accountEmailId, AccountEmails.id))
-      .where(
-        and(
-          eq(AccountEmailVerifications.id, form.data.verificationId),
-          eq(AccountEmailVerifications.code, form.data.code),
-        ),
-      )
+      .where(eq(AccountEmailVerifications.id, verificationId))
       .then(first);
 
     if (!verification) {
-      return setError(form, 'code', '코드가 일치하지 않아요');
+      throw error(400, '유효하지 않은 접근입니다');
     }
 
-    if (verification.expiresAt.isBefore(dayjs())) {
-      return setError(form, 'code', '코드가 만료되었어요. 다시 시도해 주세요.');
+    if (verification.accountEmail.accountId) {
+      throw redirect(303, '/');
     }
 
-    if (!verification.accountEmail.accountId) {
-      // 신규 가입자 - verification을 삭제하지 않고 회원가입 페이지로 리다이렉트
-      cookies.set('signup_verification', verification.id, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        path: '/',
-      });
-
-      return redirect(303, '/auth/signup');
-    }
-
-    // 기존 사용자 - verification 삭제하고 로그인 처리
     await db.transaction(async (tx) => {
       await tx
         .delete(AccountEmailVerifications)
         .where(eq(AccountEmailVerifications.id, verification.id));
 
-      const accountId = verification.accountEmail.accountId!;
+      const accountId = await tx
+        .insert(Accounts)
+        .values({
+          name: form.data.name,
+          primaryEmailId: verification.accountEmail.id,
+        })
+        .returning({
+          id: Accounts.id,
+        })
+        .then(firstOrThrow)
+        .then(({ id }) => id);
+
+      await tx
+        .delete(AccountEmails)
+        .where(
+          and(
+            eq(AccountEmails.normalizedEmail, verification.accountEmail.normalizedEmail),
+            ne(AccountEmails.id, verification.accountEmail.id),
+          ),
+        );
+
+      await tx
+        .update(AccountEmails)
+        .set({
+          accountId,
+        })
+        .where(eq(AccountEmails.id, verification.accountEmail.id));
 
       const session = await tx
         .insert(Sessions)
@@ -124,6 +149,11 @@ export const actions = {
         sameSite: 'lax',
         path: '/',
         expires: dayjs().add(1, 'year').toDate(),
+      });
+
+      // 회원가입 완료로 쿠키 삭제
+      cookies.delete('signup_verification', {
+        path: '/',
       });
     });
 

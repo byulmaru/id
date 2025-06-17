@@ -12,6 +12,7 @@ export const Accounts = pgTable('accounts', {
   primaryEmailId: varchar('primary_email_id')
     .notNull()
     .references((): AnyPgColumn => AccountEmails.id),
+  name: varchar('name').notNull(),
   state: AccountState('state').notNull().default('ACTIVE'),
   createdAt: datetime('created_at')
     .notNull()
