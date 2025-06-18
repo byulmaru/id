@@ -19,7 +19,6 @@
     </div>
 
     <form class="flex flex-col gap-4" method="post" use:enhance>
-      <!-- 이름 입력 -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1" for="name">
           이름
@@ -34,7 +33,6 @@
         />
       </div>
 
-      <!-- 약관 동의 -->
       <div class="space-y-3">
         <h3 class="text-sm font-medium text-gray-700">약관 동의</h3>
         

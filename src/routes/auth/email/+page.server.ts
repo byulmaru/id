@@ -13,6 +13,7 @@ import {
   Sessions,
 } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
+import { env } from '$env/dynamic/private';
 
 const schema = z.object({
   verificationId: z.string(),
@@ -122,7 +123,7 @@ export const actions = {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        path: '/',
+        path: env.COOKIE_PATH,
         expires: dayjs().add(1, 'year').toDate(),
       });
     });

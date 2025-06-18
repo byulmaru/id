@@ -14,7 +14,7 @@
 
 <div class="flex min-h-screen items-center justify-center bg-gray-50">
   <div class="flex w-full max-w-md flex-col gap-6 rounded-lg bg-white p-8 shadow-lg">
-    <h1 class="mb-4 text-center text-2xl font-bold">코스모 시작하기</h1>
+    <h1 class="mb-4 text-center text-2xl font-bold">별마루 통합 로그인</h1>
     <form class="flex flex-col gap-2" method="post" use:enhance>
       <TextInput
         name="email"

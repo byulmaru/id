@@ -101,7 +101,7 @@ export const actions = {
       };
 
       await sendEmail({
-        subject: account ? '코스모 로그인하기' : '코스모 회원가입하기',
+        subject: account ? '별마루 통합 계정 로그인하기' : '별마루 통합 계정 가입하기',
         recipient: email,
         body: account ? Login(emailProps) : Signup(emailProps),
       });
