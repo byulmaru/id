@@ -123,7 +123,8 @@ export const actions = {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        path: env.COOKIE_PATH,
+        domain: env.COOKIE_DOMAIN,
+        path: '/',
         expires: dayjs().add(1, 'year').toDate(),
       });
     });

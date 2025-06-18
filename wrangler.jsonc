@@ -8,12 +8,20 @@
   "main": ".svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2025-05-21",
   "compatibility_flags": ["nodejs_compat"],
+  "route": {
+    "pattern": "id.byulmaru.co",
+    "custom_domain": true,
+  },
+  "workers_dev": false,
   "assets": {
     "binding": "ASSETS",
     "directory": ".svelte-kit/cloudflare",
   },
   "observability": {
     "enabled": true,
+  },
+  "vars": {
+    "COOKIE_DOMAIN": ".byulmaru.co",
   },
   /**
    * Smart Placement

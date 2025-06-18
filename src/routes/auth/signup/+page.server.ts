@@ -14,6 +14,7 @@ import {
   Sessions,
 } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
+import { env } from '$env/dynamic/private';
 
 const schema = z.object({
   name: z.string().min(1, '이름을 입력해주세요').max(50, '이름은 50자 이하로 입력해주세요'),
@@ -147,6 +148,7 @@ export const actions = {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
+        domain: env.COOKIE_DOMAIN,
         path: '/',
         expires: dayjs().add(1, 'year').toDate(),
       });
