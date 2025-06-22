@@ -1,13 +1,12 @@
 import { json } from '@sveltejs/kit';
-import { env } from '$env/dynamic/public';
 
-export const GET = async () => {
+export const GET = async ({ platform }) => {
   return json({
-    issuer: env.PUBLIC_OIDC_ISSUER,
-    authorization_endpoint: `${env.PUBLIC_OIDC_ISSUER}/oauth/authorize`,
-    token_endpoint: `${env.PUBLIC_OIDC_ISSUER}/oauth/token`,
-    userinfo_endpoint: `${env.PUBLIC_OIDC_ISSUER}/userinfo`,
-    jwks_uri: `${env.PUBLIC_OIDC_ISSUER}/jwks`,
+    issuer: platform!.env.PUBLIC_OIDC_ISSUER,
+    authorization_endpoint: `${platform!.env.PUBLIC_OIDC_ISSUER}/oauth/authorize`,
+    token_endpoint: `${platform!.env.PUBLIC_OIDC_ISSUER}/oauth/token`,
+    userinfo_endpoint: `${platform!.env.PUBLIC_OIDC_ISSUER}/userinfo`,
+    jwks_uri: `${platform!.env.PUBLIC_OIDC_ISSUER}/jwks`,
     scopes_supported: ['openid', 'profile', 'email'],
     response_types_supported: ['code'],
     subject_types_supported: ['public'],

@@ -4,7 +4,6 @@ import { and, eq } from 'drizzle-orm';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
-import { env } from '$env/dynamic/private';
 import {
   AccountEmails,
   AccountEmailVerifications,
@@ -123,7 +122,7 @@ export const actions = {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        domain: env.PUBLIC_COOKIE_DOMAIN,
+        domain: platform!.env.PUBLIC_COOKIE_DOMAIN,
         path: '/',
         expires: dayjs().add(1, 'year').toDate(),
       });

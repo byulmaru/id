@@ -2,7 +2,6 @@ import { json } from '@sveltejs/kit';
 import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { env } from '$env/dynamic/public';
 import {
   AccountEmails,
   Accounts,
@@ -116,7 +115,7 @@ export const POST = async ({ request, platform }) => {
     idToken = await createIdToken({
       sub: account.id,
       aud: client_id,
-      iss: env.PUBLIC_OIDC_ISSUER,
+      iss: platform!.env.PUBLIC_OIDC_ISSUER,
       nonce: applicationToken.nonce || undefined,
       ...(applicationToken.scopes.includes('profile') && { name: account.name }),
       ...(applicationToken.scopes.includes('email') && { email: account.email }),
