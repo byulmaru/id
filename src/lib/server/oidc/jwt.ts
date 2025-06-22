@@ -13,14 +13,12 @@ export type IdTokenPayload = {
   [key: string]: unknown;
 };
 
-export const jwk = JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString()) as JWK;
-export const publicJwk = { kid: jwk.kid, kty: jwk.kty, alg: jwk.alg, crv: jwk.crv, x: jwk.x };
-
-export const privateKey = await importJWK(jwk, jwk.alg);
-export const publicKey = await importJWK(publicJwk, jwk.alg);
+export const getJwk = (): JWK => JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString());
 
 export const createIdToken = async (payload: IdTokenPayload) => {
   const now = dayjs();
+  const jwk = getJwk();
+  const privateKey = await importJWK(jwk, jwk.alg);
 
   return await new SignJWT({
     ...payload,
@@ -28,8 +26,8 @@ export const createIdToken = async (payload: IdTokenPayload) => {
     exp: payload.exp ?? now.add(10, 'minutes').unix(),
   })
     .setProtectedHeader({
-      alg: publicJwk.alg!,
-      kid: publicJwk.kid,
+      alg: jwk.alg!,
+      kid: jwk.kid,
       typ: 'JWT',
     })
     .sign(privateKey);
