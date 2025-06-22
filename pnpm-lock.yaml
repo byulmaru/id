@@ -98,9 +98,6 @@ importers:
       react-email:
         specifier: ^4.0.15
         version: 4.0.15(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      rfc4648:
-        specifier: ^1.5.4
-        version: 1.5.4
       svelte:
         specifier: ^5.33.1
         version: 5.33.1
@@ -3429,9 +3426,6 @@ packages:
   reusify@1.1.0:
     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
-
-  rfc4648@1.5.4:
-    resolution: {integrity: sha512-rRg/6Lb+IGfJqO05HZkN50UtY7K/JhxJag1kP23+zyMfrvoB0B7RWv06MbOzoc79RgCdNTiUaNsTT1AJZ7Z+cg==}
 
   rollup@4.41.1:
     resolution: {integrity: sha512-cPmwD3FnFv8rKMBc1MxWCwVQFxwf1JEmSX3iQXrRVVG15zerAIXRjMFVWnd5Q5QvgKF7Aj+5ykXFhUl+QGnyOw==}
@@ -7424,8 +7418,6 @@ snapshots:
       signal-exit: 4.1.0
 
   reusify@1.1.0: {}
-
-  rfc4648@1.5.4: {}
 
   rollup@4.41.1:
     dependencies:

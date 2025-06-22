@@ -45,7 +45,6 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-email": "^4.0.15",
-    "rfc4648": "^1.5.4",
     "svelte": "^5.33.1",
     "svelte-check": "^4.2.1",
     "sveltekit-superforms": "^2.25.0",

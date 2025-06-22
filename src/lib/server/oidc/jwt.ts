@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
 import { importJWK, SignJWT } from 'jose';
-import { base64 } from 'rfc4648';
 import { env } from '$env/dynamic/private';
 import type { JWK } from 'jose';
 
@@ -14,10 +13,7 @@ export type IdTokenPayload = {
   [key: string]: unknown;
 };
 
-const decoder = new TextDecoder();
-const decode = (text: Uint8Array) => decoder.decode(text);
-
-export const jwk = JSON.parse(decode(base64.parse(env.OIDC_JWK, { loose: true }))) as JWK;
+export const jwk = JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString()) as JWK;
 export const publicJwk = { kid: jwk.kid, kty: jwk.kty, alg: jwk.alg, crv: jwk.crv, x: jwk.x };
 
 export const privateKey = await importJWK(jwk, jwk.alg);
