@@ -10,13 +10,16 @@ import {
   OAuthApplications,
   OAuthApplicationTokens,
 } from '$lib/server/db';
+import { filterSupportedScopes, parseScopes, validateScopes } from '$lib/server/oidc/scopes';
 import { getSession } from '$lib/server/session';
 import { OAuthAuthorizeSchema } from './schema';
 
 export const GET = async ({ cookies, url, platform }) => {
-  const { client_id, redirect_uri, state } = OAuthAuthorizeSchema.parse(
+  const { client_id, redirect_uri, state, scope } = OAuthAuthorizeSchema.parse(
     Object.fromEntries(url.searchParams),
   );
+
+  const requestedScopes = parseScopes(scope);
 
   const db = await getDatabase(platform!.env.DATABASE_URL);
 
@@ -24,6 +27,7 @@ export const GET = async ({ cookies, url, platform }) => {
     .select({
       id: OAuthApplications.id,
       redirectUriId: OAuthApplicationRedirectUris.id,
+      scopes: OAuthApplications.scopes,
     })
     .from(OAuthApplications)
     .leftJoin(
@@ -40,6 +44,11 @@ export const GET = async ({ cookies, url, platform }) => {
     throw error(400, { message: 'invalid_redirect_uri' });
   }
 
+  const scopes = filterSupportedScopes(requestedScopes);
+  if (!validateScopes(scopes, application.scopes)) {
+    throw error(400, { message: 'invalid_scope' });
+  }
+
   const session = await getSession(db, cookies.get('session'));
   if (session) {
     return redirect(
@@ -52,6 +61,7 @@ export const GET = async ({ cookies, url, platform }) => {
             applicationId: application.id,
             redirectUriId: application.redirectUriId!,
             token: crypto.randomUUID(),
+            scopes,
             expiresAt: dayjs().add(5, 'minutes'),
           })
           .returning({
@@ -75,6 +85,7 @@ export const GET = async ({ cookies, url, platform }) => {
         redirect_uri: redirect_uri.toString(),
         response_type: 'code',
         state,
+        scope,
       } satisfies z.input<typeof OAuthAuthorizeSchema>),
       {
         path: '/',

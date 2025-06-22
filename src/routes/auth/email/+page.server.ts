@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
+import { env } from '$env/dynamic/private';
 import {
   AccountEmails,
   AccountEmailVerifications,
@@ -13,7 +14,6 @@ import {
   Sessions,
 } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
-import { env } from '$env/dynamic/private';
 
 const schema = z.object({
   verificationId: z.string(),
@@ -123,7 +123,7 @@ export const actions = {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        domain: env.COOKIE_DOMAIN,
+        domain: env.PUBLIC_COOKIE_DOMAIN,
         path: '/',
         expires: dayjs().add(1, 'year').toDate(),
       });

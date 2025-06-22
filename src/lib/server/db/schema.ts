@@ -74,6 +74,10 @@ export const OAuthApplications = pgTable('oauth_applications', {
     .primaryKey()
     .$defaultFn(() => ulid()),
   name: varchar('name').notNull(),
+  scopes: varchar('scopes')
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
   isSuperApp: boolean('is_super_app').notNull().default(false),
   createdAt: datetime('created_at'),
 });
@@ -118,6 +122,8 @@ export const OAuthApplicationTokens = pgTable('oauth_application_tokens', {
     .notNull()
     .references(() => OAuthApplicationRedirectUris.id),
   token: varchar('token').notNull(),
+  scopes: varchar('scopes').array().notNull(),
+  nonce: varchar('nonce'),
   createdAt: datetime('created_at')
     .notNull()
     .default(sql`now()`),
@@ -135,6 +141,7 @@ export const OAuthSessions = pgTable('oauth_sessions', {
     .notNull()
     .references(() => Accounts.id),
   token: varchar('token').notNull(),
+  scopes: varchar('scopes').array().notNull(),
   createdAt: datetime('created_at')
     .notNull()
     .default(sql`now()`),

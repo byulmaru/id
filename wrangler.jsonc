@@ -21,7 +21,8 @@
     "enabled": true,
   },
   "vars": {
-    "COOKIE_DOMAIN": ".byulmaru.co",
+    "PUBLIC_COOKIE_DOMAIN": ".byulmaru.co",
+    "PUBLIC_OIDC_ISSUER": "https://id.byulmaru.co",
   },
   /**
    * Smart Placement

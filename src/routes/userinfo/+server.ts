@@ -10,7 +10,7 @@ export const GET = async ({ request, platform }) => {
   const token = request.headers.get('Authorization')?.match(/^Bearer\s+(.*)$/)?.[1] ?? null;
   const session = await getOAuthSession(db, token);
   if (!session) {
-    return json({ error: 'Unauthorized' }, { status: 401 });
+    return json({ error: 'invalid_token' }, { status: 401 });
   }
 
   const user = await db
@@ -24,9 +24,20 @@ export const GET = async ({ request, platform }) => {
     .where(eq(Accounts.id, session.accountId))
     .then(firstOrThrow);
 
-  return json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-  });
+  const scopes = session.scopes || [];
+
+  // scope에 따라 응답할 claims 결정
+  const userInfo: Record<string, unknown> = {
+    sub: user.id,
+  };
+
+  if (scopes.includes('profile')) {
+    userInfo.name = user.name;
+  }
+
+  if (scopes.includes('email')) {
+    userInfo.email = user.email;
+  }
+
+  return json(userInfo);
 };

@@ -2,7 +2,10 @@ import { json } from '@sveltejs/kit';
 import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { env } from '$env/dynamic/public';
 import {
+  AccountEmails,
+  Accounts,
   first,
   firstOrThrow,
   getDatabase,
@@ -12,6 +15,8 @@ import {
   OAuthApplicationTokens,
   OAuthSessions,
 } from '$lib/server/db';
+import { createIdToken } from '$lib/server/oidc/jwt';
+import { isOIDCRequest } from '$lib/server/oidc/scopes';
 import { uriToRedirectUrl } from '$lib/url';
 
 const schema = z.object({
@@ -34,6 +39,8 @@ export const POST = async ({ request, platform }) => {
       id: OAuthApplicationTokens.id,
       applicationId: OAuthApplicationTokens.applicationId,
       accountId: OAuthApplicationTokens.accountId,
+      scopes: OAuthApplicationTokens.scopes,
+      nonce: OAuthApplicationTokens.nonce,
       expiresAt: OAuthApplicationTokens.expiresAt,
     })
     .then(first);
@@ -84,6 +91,7 @@ export const POST = async ({ request, platform }) => {
     .values({
       applicationId: applicationToken.applicationId,
       accountId: applicationToken.accountId,
+      scopes: applicationToken.scopes,
       token: crypto.randomUUID(),
     })
     .returning({
@@ -91,8 +99,33 @@ export const POST = async ({ request, platform }) => {
     })
     .then(firstOrThrow);
 
+  let idToken: string | undefined;
+
+  if (isOIDCRequest(applicationToken.scopes)) {
+    const account = await db
+      .select({
+        id: Accounts.id,
+        name: Accounts.name,
+        email: AccountEmails.email,
+      })
+      .from(Accounts)
+      .innerJoin(AccountEmails, eq(Accounts.primaryEmailId, AccountEmails.id))
+      .where(eq(Accounts.id, applicationToken.accountId))
+      .then(firstOrThrow);
+
+    idToken = await createIdToken({
+      sub: account.id,
+      aud: client_id,
+      iss: env.PUBLIC_OIDC_ISSUER,
+      nonce: applicationToken.nonce || undefined,
+      ...(applicationToken.scopes.includes('profile') && { name: account.name }),
+      ...(applicationToken.scopes.includes('email') && { email: account.email }),
+    });
+  }
+
   return json({
     access_token: session.token,
     token_type: 'Bearer',
+    id_token: idToken,
   });
 };

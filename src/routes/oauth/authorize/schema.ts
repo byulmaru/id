@@ -5,5 +5,6 @@ export const OAuthAuthorizeSchema = z.object({
   response_type: z.enum(['code']),
   client_id: z.string(),
   redirect_uri: z.string().url().transform(uriToRedirectUrl),
+  scope: z.string().optional(),
   state: z.string().max(4096).optional(),
 });
