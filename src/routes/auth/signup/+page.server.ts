@@ -1,14 +1,14 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, gt, ne } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
 import { env as publicEnv } from '$env/dynamic/public';
 import {
-  AccountEmails,
-  AccountEmailVerifications,
   Accounts,
   db,
+  Emails,
+  EmailVerifications,
   first,
   firstOrThrow,
   Sessions,
@@ -30,24 +30,30 @@ export const load = async ({ cookies }) => {
 
   const verification = await db
     .select({
-      id: AccountEmailVerifications.id,
-      accountEmail: {
-        id: AccountEmails.id,
-        email: AccountEmails.email,
-        normalizedEmail: AccountEmails.normalizedEmail,
-        accountId: AccountEmails.accountId,
+      id: EmailVerifications.id,
+      email: {
+        id: Emails.id,
+        email: Emails.email,
+        normalizedEmail: Emails.normalizedEmail,
+        accountId: Emails.accountId,
       },
     })
-    .from(AccountEmailVerifications)
-    .innerJoin(AccountEmails, eq(AccountEmailVerifications.accountEmailId, AccountEmails.id))
-    .where(eq(AccountEmailVerifications.id, verificationId))
+    .from(EmailVerifications)
+    .innerJoin(Emails, eq(EmailVerifications.emailId, Emails.id))
+    .where(
+      and(
+        eq(EmailVerifications.id, verificationId),
+        eq(EmailVerifications.purpose, 'SIGN_UP_VERIFIED'),
+        gt(EmailVerifications.expiresAt, Temporal.Now.instant()),
+      ),
+    )
     .then(first);
 
   if (!verification) {
-    throw error(400, '유효하지 않은 접근입니다');
+    throw redirect(303, '/auth');
   }
 
-  if (verification.accountEmail.accountId) {
+  if (verification.email.accountId) {
     // 이미 계정이 있는 경우
     throw redirect(303, '/');
   }
@@ -55,7 +61,7 @@ export const load = async ({ cookies }) => {
   const form = await superValidate(zod4(schema));
 
   return {
-    email: verification.accountEmail.email,
+    email: verification.email.email,
     form,
   };
 };
@@ -70,41 +76,45 @@ export const actions = {
 
     const verificationId = cookies.get('signup_verification');
     if (!verificationId) {
-      throw redirect(303, '/auth');
+      throw error(400, '유효하지 않은 접근입니다');
     }
 
     const verification = await db
       .select({
-        id: AccountEmailVerifications.id,
-        accountEmail: {
-          id: AccountEmails.id,
-          normalizedEmail: AccountEmails.normalizedEmail,
-          accountId: AccountEmails.accountId,
+        id: EmailVerifications.id,
+        email: {
+          id: Emails.id,
+          normalizedEmail: Emails.normalizedEmail,
+          accountId: Emails.accountId,
         },
       })
-      .from(AccountEmailVerifications)
-      .innerJoin(AccountEmails, eq(AccountEmailVerifications.accountEmailId, AccountEmails.id))
-      .where(eq(AccountEmailVerifications.id, verificationId))
+      .from(EmailVerifications)
+      .innerJoin(Emails, eq(EmailVerifications.emailId, Emails.id))
+      .where(
+        and(
+          eq(EmailVerifications.id, verificationId),
+          eq(EmailVerifications.purpose, 'SIGN_UP_VERIFIED'),
+          gt(EmailVerifications.expiresAt, Temporal.Now.instant()),
+        ),
+      )
       .then(first);
 
     if (!verification) {
       throw error(400, '유효하지 않은 접근입니다');
     }
 
-    if (verification.accountEmail.accountId) {
+    if (verification.email.accountId) {
       throw redirect(303, '/');
     }
 
     await db.transaction(async (tx) => {
-      await tx
-        .delete(AccountEmailVerifications)
-        .where(eq(AccountEmailVerifications.id, verification.id));
+      await tx.delete(EmailVerifications).where(eq(EmailVerifications.id, verification.id));
 
       const accountId = await tx
         .insert(Accounts)
         .values({
           name: form.data.name,
-          primaryEmailId: verification.accountEmail.id,
+          primaryEmailId: verification.email.id,
         })
         .returning({
           id: Accounts.id,
@@ -113,20 +123,20 @@ export const actions = {
         .then(({ id }) => id);
 
       await tx
-        .delete(AccountEmails)
+        .delete(Emails)
         .where(
           and(
-            eq(AccountEmails.normalizedEmail, verification.accountEmail.normalizedEmail),
-            ne(AccountEmails.id, verification.accountEmail.id),
+            eq(Emails.normalizedEmail, verification.email.normalizedEmail),
+            ne(Emails.id, verification.email.id),
           ),
         );
 
       await tx
-        .update(AccountEmails)
+        .update(Emails)
         .set({
           accountId,
         })
-        .where(eq(AccountEmails.id, verification.accountEmail.id));
+        .where(eq(Emails.id, verification.email.id));
 
       const session = await tx
         .insert(Sessions)

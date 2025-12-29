@@ -3,9 +3,9 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { env as publicEnv } from '$env/dynamic/public';
 import {
-  AccountEmails,
   Accounts,
   db,
+  Emails,
   first,
   firstOrThrow,
   OAuthApplicationRedirectUris,
@@ -106,10 +106,10 @@ export const POST = async ({ request }) => {
       .select({
         id: Accounts.id,
         name: Accounts.name,
-        email: AccountEmails.email,
+        email: Emails.email,
       })
       .from(Accounts)
-      .innerJoin(AccountEmails, eq(Accounts.primaryEmailId, AccountEmails.id))
+      .innerJoin(Emails, eq(Accounts.primaryEmailId, Emails.id))
       .where(eq(Accounts.id, applicationToken.accountId))
       .then(firstOrThrow);
 

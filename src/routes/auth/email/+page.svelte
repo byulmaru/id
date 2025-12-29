@@ -23,7 +23,6 @@
       <TextInput
         name="code"
         class="mb-2"
-        autocomplete="one-time-code"
         maxlength={6}
         placeholder="인증번호 6자리를 입력하세요"
         required

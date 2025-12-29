@@ -11,7 +11,7 @@ export const Accounts = pgTable('accounts', {
     .$defaultFn(() => ulid()),
   primaryEmailId: varchar('primary_email_id')
     .notNull()
-    .references((): AnyPgColumn => AccountEmails.id),
+    .references((): AnyPgColumn => Emails.id),
   name: varchar('name').notNull(),
   state: AccountState('state').notNull().default('ACTIVE'),
   createdAt: datetime('created_at')
@@ -34,8 +34,8 @@ export const AccountAuthenticators = pgTable('account_authenticators', {
     .default(sql`now()`),
 });
 
-export const AccountEmails = pgTable(
-  'account_emails',
+export const Emails = pgTable(
+  'emails',
   {
     id: varchar('id')
       .primaryKey()
@@ -54,15 +54,21 @@ export const AccountEmails = pgTable(
   ],
 );
 
-export const AccountEmailVerifications = pgTable('account_email_verifications', {
+export const EmailVerificationPurpose = pgEnum('_email_verification_purpose', [
+  'LOGIN',
+  'SIGN_UP',
+  'SIGN_UP_VERIFIED',
+]);
+export const EmailVerifications = pgTable('email_verifications', {
   id: varchar('id')
     .primaryKey()
     .$defaultFn(() => ulid()),
-  accountEmailId: varchar('account_email_id')
+  emailId: varchar('email_id')
     .notNull()
     .unique()
-    .references(() => AccountEmails.id, { onDelete: 'cascade' }),
-  code: varchar('code').notNull(),
+    .references(() => Emails.id, { onDelete: 'cascade' }),
+  purpose: EmailVerificationPurpose('purpose').notNull(),
+  code: varchar('code'),
   expiresAt: datetime('expires_at').notNull(),
   createdAt: datetime('created_at')
     .notNull()

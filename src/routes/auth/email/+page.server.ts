@@ -4,14 +4,7 @@ import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
 import { env as publicEnv } from '$env/dynamic/public';
-import {
-  AccountEmails,
-  AccountEmailVerifications,
-  db,
-  first,
-  firstOrThrow,
-  Sessions,
-} from '$lib/server/db';
+import { db, Emails, EmailVerifications, first, firstOrThrow, Sessions } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
 
 const schema = z.object({
@@ -28,12 +21,12 @@ export const load = async ({ url }) => {
 
   const verification = await db
     .select({
-      id: AccountEmailVerifications.id,
-      email: AccountEmails.email,
+      id: EmailVerifications.id,
+      email: Emails.email,
     })
-    .from(AccountEmailVerifications)
-    .where(eq(AccountEmailVerifications.id, verificationId))
-    .innerJoin(AccountEmails, eq(AccountEmailVerifications.accountEmailId, AccountEmails.id))
+    .from(EmailVerifications)
+    .where(eq(EmailVerifications.id, verificationId))
+    .innerJoin(Emails, eq(EmailVerifications.emailId, Emails.id))
     .then(firstOrThrow);
 
   const form = await superValidate(
@@ -57,20 +50,20 @@ export const actions = {
 
     const verification = await db
       .select({
-        id: AccountEmailVerifications.id,
-        expiresAt: AccountEmailVerifications.expiresAt,
-        accountEmail: {
-          id: AccountEmails.id,
-          normalizedEmail: AccountEmails.normalizedEmail,
-          accountId: AccountEmails.accountId,
+        id: EmailVerifications.id,
+        expiresAt: EmailVerifications.expiresAt,
+        purpose: EmailVerifications.purpose,
+        email: {
+          id: Emails.id,
+          accountId: Emails.accountId,
         },
       })
-      .from(AccountEmailVerifications)
-      .innerJoin(AccountEmails, eq(AccountEmailVerifications.accountEmailId, AccountEmails.id))
+      .from(EmailVerifications)
+      .innerJoin(Emails, eq(EmailVerifications.emailId, Emails.id))
       .where(
         and(
-          eq(AccountEmailVerifications.id, form.data.verificationId),
-          eq(AccountEmailVerifications.code, form.data.code),
+          eq(EmailVerifications.id, form.data.verificationId),
+          eq(EmailVerifications.code, form.data.code),
         ),
       )
       .then(first);
@@ -83,46 +76,60 @@ export const actions = {
       return setError(form, 'code', '코드가 만료되었어요. 다시 시도해 주세요.');
     }
 
-    if (!verification.accountEmail.accountId) {
+    if (verification.purpose === 'SIGN_UP') {
       // 신규 가입자 - verification을 삭제하지 않고 회원가입 페이지로 리다이렉트
-      cookies.set('signup_verification', verification.id, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        path: '/',
+      await db.transaction(async (tx) => {
+        await tx.delete(EmailVerifications).where(eq(EmailVerifications.id, verification.id));
+
+        const signupVerification = await tx
+          .insert(EmailVerifications)
+          .values({
+            emailId: verification.email.id,
+            purpose: 'SIGN_UP_VERIFIED',
+            expiresAt: Temporal.Now.instant().add({ hours: 24 }),
+          })
+          .returning({
+            id: EmailVerifications.id,
+          })
+          .then(firstOrThrow);
+
+        cookies.set('signup_verification', signupVerification.id, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          path: '/',
+        });
       });
 
       return redirect(303, '/auth/signup');
-    }
+    } else if (verification.purpose === 'LOGIN') {
+      // 기존 사용자 - verification 삭제하고 로그인 처리
+      await db.transaction(async (tx) => {
+        await tx.delete(EmailVerifications).where(eq(EmailVerifications.id, verification.id));
 
-    // 기존 사용자 - verification 삭제하고 로그인 처리
-    await db.transaction(async (tx) => {
-      await tx
-        .delete(AccountEmailVerifications)
-        .where(eq(AccountEmailVerifications.id, verification.id));
+        const accountId = verification.email.accountId!;
 
-      const accountId = verification.accountEmail.accountId!;
+        const session = await tx
+          .insert(Sessions)
+          .values({
+            accountId,
+            token: crypto.randomUUID(),
+          })
+          .returning({
+            token: Sessions.token,
+          })
+          .then(firstOrThrow);
 
-      const session = await tx
-        .insert(Sessions)
-        .values({
-          accountId,
-          token: crypto.randomUUID(),
-        })
-        .returning({
-          token: Sessions.token,
-        })
-        .then(firstOrThrow);
-
-      cookies.set('session', session.token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
-        path: '/',
-        maxAge: 60 * 60 * 24 * 365,
+        cookies.set('session', session.token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
+          path: '/',
+          maxAge: 60 * 60 * 24 * 365,
+        });
       });
-    });
+    }
 
     const oauthRedirectCookie = cookies.get('oauth_redirect_to');
     if (oauthRedirectCookie) {

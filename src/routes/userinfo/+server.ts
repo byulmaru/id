@@ -1,11 +1,10 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
-import { db,firstOrThrow } from '$lib/server/db';
-import { AccountEmails, Accounts } from '$lib/server/db/schema';
+import { db, firstOrThrow } from '$lib/server/db';
+import { Accounts, Emails } from '$lib/server/db/schema';
 import { getOAuthSession } from '$lib/server/session';
 
 export const GET = async ({ request }) => {
-
   const token = request.headers.get('Authorization')?.match(/^Bearer\s+(.*)$/)?.[1] ?? null;
   const session = await getOAuthSession(db, token);
   if (!session) {
@@ -16,10 +15,10 @@ export const GET = async ({ request }) => {
     .select({
       id: Accounts.id,
       name: Accounts.name,
-      email: AccountEmails.email,
+      email: Emails.email,
     })
     .from(Accounts)
-    .innerJoin(AccountEmails, eq(Accounts.primaryEmailId, AccountEmails.id))
+    .innerJoin(Emails, eq(Accounts.primaryEmailId, Emails.id))
     .where(eq(Accounts.id, session.accountId))
     .then(firstOrThrow);
 
