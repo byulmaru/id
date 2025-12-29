@@ -1,5 +1,4 @@
 import { json } from '@sveltejs/kit';
-import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { env as publicEnv } from '$env/dynamic/public';
@@ -43,7 +42,10 @@ export const POST = async ({ request }) => {
     })
     .then(first);
 
-  if (!applicationToken || dayjs(applicationToken.expiresAt).isBefore(dayjs())) {
+  if (
+    !applicationToken ||
+    Temporal.Instant.compare(applicationToken.expiresAt, Temporal.Now.instant()) < 0
+  ) {
     return json({ error: 'Invalid or expired code' }, { status: 400 });
   }
 

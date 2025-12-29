@@ -1,5 +1,4 @@
 import { error, redirect } from '@sveltejs/kit';
-import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import {
@@ -60,7 +59,7 @@ export const GET = async ({ cookies, url }) => {
             redirectUriId: application.redirectUriId!,
             token: crypto.randomUUID(),
             scopes,
-            expiresAt: dayjs().add(5, 'minutes'),
+            expiresAt: Temporal.Now.instant().add({ minutes: 5 }),
           })
           .returning({
             token: OAuthApplicationTokens.token,

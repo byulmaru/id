@@ -1,10 +1,9 @@
 import { fail, redirect } from '@sveltejs/kit';
-import dayjs from 'dayjs';
 import { eq } from 'drizzle-orm';
 import normalizeEmail from 'normalize-email';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
-import z from 'zod';
+import { z } from 'zod';
 import {
   AccountAuthenticators,
   AccountEmails,
@@ -63,57 +62,61 @@ export const actions = {
         .toString()
         .padStart(6, '0');
 
-      const accountEmailId = account
-        ? account.emailId
-        : await db
-            .insert(AccountEmails)
-            .values({
-              email,
-              normalizedEmail,
-            })
-            .returning({ id: AccountEmails.id })
-            .then((rows) => rows[0].id);
+      const verification = await db.transaction(async (tx) => {
+        const accountEmailId = account
+          ? account.emailId
+          : await tx
+              .insert(AccountEmails)
+              .values({
+                email,
+                normalizedEmail,
+              })
+              .returning({ id: AccountEmails.id })
+              .then((rows) => rows[0].id);
 
-      const verification = await db
-        .insert(AccountEmailVerifications)
-        .values({
-          accountEmailId,
-          code: token,
-          expiresAt: dayjs().add(10, 'minutes'),
-        })
-        .returning({
-          id: AccountEmailVerifications.id,
-          expiresAt: AccountEmailVerifications.expiresAt,
-        })
-        .onConflictDoUpdate({
-          target: [AccountEmailVerifications.accountEmailId],
-          set: {
+        const verification = await tx
+          .insert(AccountEmailVerifications)
+          .values({
+            accountEmailId,
             code: token,
-            expiresAt: dayjs().add(10, 'minutes'),
-          },
-        })
-        .then(firstOrThrow);
+            expiresAt: Temporal.Now.instant().add({ minutes: 10 }),
+          })
+          .returning({
+            id: AccountEmailVerifications.id,
+            expiresAt: AccountEmailVerifications.expiresAt,
+          })
+          .onConflictDoUpdate({
+            target: [AccountEmailVerifications.accountEmailId],
+            set: {
+              code: token,
+              expiresAt: Temporal.Now.instant().add({ minutes: 10 }),
+            },
+          })
+          .then(firstOrThrow);
 
-      const emailProps = {
-        origin: url.origin,
-        email,
-        code: token,
-        verificationId: verification.id,
-        expiresAt: verification.expiresAt,
-      };
+        console.log(verification);
 
-      await sendEmail({
-        subject: account ? '별마루 통합 계정 로그인하기' : '별마루 통합 계정 가입하기',
-        recipient: email,
-        body: account ? Login(emailProps) : Signup(emailProps),
+        const emailProps = {
+          origin: url.origin,
+          email,
+          code: token,
+          verificationId: verification.id,
+          expiresAt: verification.expiresAt,
+        };
+
+        await sendEmail({
+          subject: account ? '별마루 통합 계정 로그인하기' : '별마루 통합 계정 가입하기',
+          recipient: email,
+          body: account ? Login(emailProps) : Signup(emailProps),
+        });
+
+        return verification;
       });
-
-      console.log('email sent');
 
       throw redirect(303, `/auth/email?verificationId=${verification.id}`);
     } else {
       // TODO: 다른 로그인 방법 구현
     }
-    return { form, foo: 'bar' };
+    return { form };
   },
 };

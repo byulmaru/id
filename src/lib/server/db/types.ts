@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { customType } from 'drizzle-orm/pg-core';
 
 export const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
@@ -7,10 +6,10 @@ export const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
   fromDriver: (value) => value,
 });
 
-export const datetime = customType<{ data: dayjs.Dayjs; driverData: string }>({
+export const datetime = customType<{ data: Temporal.Instant; driverData: Date }>({
   dataType: () => 'timestamp with time zone',
-  fromDriver: (value) => dayjs(value),
-  toDriver: (value) => value.toISOString(),
+  fromDriver: (value) => value.toTemporalInstant(),
+  toDriver: (value) => new Date(value.epochMilliseconds),
 });
 
 export const jsonb = customType<{ data: unknown; driverData: unknown }>({

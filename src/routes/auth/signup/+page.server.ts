@@ -1,5 +1,4 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import dayjs from 'dayjs';
 import { and, eq, ne } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
@@ -146,7 +145,7 @@ export const actions = {
         sameSite: 'lax',
         domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
         path: '/',
-        expires: dayjs().add(1, 'year').toDate(),
+        maxAge: 60 * 60 * 24 * 365,
       });
 
       // 회원가입 완료로 쿠키 삭제

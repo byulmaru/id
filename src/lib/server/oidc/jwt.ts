@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { importJWK, SignJWT } from 'jose';
 import { env } from '$env/dynamic/private';
 import type { JWK } from 'jose';
@@ -16,14 +15,14 @@ export type IdTokenPayload = {
 export const getJwk = (): JWK => JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString());
 
 export const createIdToken = async (payload: IdTokenPayload) => {
-  const now = dayjs();
+  const now = Temporal.Now.instant();
   const jwk = getJwk();
   const privateKey = await importJWK(jwk, jwk.alg);
 
   return await new SignJWT({
     ...payload,
-    iat: payload.iat ?? now.unix(),
-    exp: payload.exp ?? now.add(10, 'minutes').unix(),
+    iat: payload.iat ?? Math.floor(now.epochMilliseconds / 1000),
+    exp: payload.exp ?? Math.floor(now.add({ minutes: 10 }).epochMilliseconds / 1000),
   })
     .setProtectedHeader({
       alg: jwk.alg!,

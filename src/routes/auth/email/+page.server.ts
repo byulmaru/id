@@ -1,5 +1,4 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
@@ -80,7 +79,7 @@ export const actions = {
       return setError(form, 'code', '코드가 일치하지 않아요');
     }
 
-    if (verification.expiresAt.isBefore(dayjs())) {
+    if (Temporal.Instant.compare(verification.expiresAt, Temporal.Now.instant()) < 0) {
       return setError(form, 'code', '코드가 만료되었어요. 다시 시도해 주세요.');
     }
 
@@ -121,7 +120,7 @@ export const actions = {
         sameSite: 'lax',
         domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
         path: '/',
-        expires: dayjs().add(1, 'year').toDate(),
+        maxAge: 60 * 60 * 24 * 365,
       });
     });
 
