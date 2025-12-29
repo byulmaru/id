@@ -1,14 +1,16 @@
-import { SendEmailCommand, SESClient } from '@aws-sdk/client-ses';
 import { render } from '@react-email/components';
+import { createMessage } from '@upyo/core';
+import { SmtpTransport } from '@upyo/smtp';
 import { env } from '$env/dynamic/private';
 import type { ReactElement } from 'react';
 
-const ses = new SESClient({
-  region: 'us-west-2',
-  credentials: {
-    accessKeyId: env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+const transport = new SmtpTransport({
+  host: env.SMTP_HOST,
+  auth: {
+    user: env.SMTP_USER,
+    pass: env.SMTP_PASSWORD,
   },
+  secure: false,
 });
 
 type SendEmailParams = {
@@ -18,22 +20,14 @@ type SendEmailParams = {
 };
 
 export const sendEmail = async ({ subject, recipient, body }: SendEmailParams) => {
-  await ses.send(
-    new SendEmailCommand({
-      Source: 'Kosmo <noreply@kos.moe>',
-      Destination: {
-        ToAddresses: [recipient],
-      },
-      Message: {
-        Subject: {
-          Data: subject,
-        },
-        Body: {
-          Html: {
-            Data: await render(body),
-          },
-        },
-      },
-    }),
-  );
+  console.log('transport', transport.config);
+
+  const email = createMessage({
+    from: 'Byulmaru ID <noreply@byulmaru.co>',
+    to: recipient,
+    subject,
+    content: { html: await render(body) },
+  });
+
+  await transport.send(email);
 };

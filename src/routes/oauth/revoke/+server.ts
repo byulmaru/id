@@ -2,8 +2,8 @@ import { json } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import {
+  db,
   first,
-  getDatabase,
   OAuthApplications,
   OAuthApplicationSecrets,
   OAuthSessions,
@@ -15,10 +15,8 @@ const schema = z.object({
   token: z.string(),
 });
 
-export const POST = async ({ request, platform }) => {
+export const POST = async ({ request }) => {
   const { client_id, client_secret, token } = schema.parse(await request.json());
-
-  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const application = await db
     .select({

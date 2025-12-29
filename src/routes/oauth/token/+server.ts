@@ -2,12 +2,13 @@ import { json } from '@sveltejs/kit';
 import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { env as publicEnv } from '$env/dynamic/public';
 import {
   AccountEmails,
   Accounts,
+  db,
   first,
   firstOrThrow,
-  getDatabase,
   OAuthApplicationRedirectUris,
   OAuthApplications,
   OAuthApplicationSecrets,
@@ -26,10 +27,8 @@ const schema = z.object({
   redirect_uri: z.string().url().transform(uriToRedirectUrl),
 });
 
-export const POST = async ({ request, platform }) => {
+export const POST = async ({ request }) => {
   const { code, client_id, client_secret, redirect_uri } = schema.parse(await request.json());
-
-  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const applicationToken = await db
     .delete(OAuthApplicationTokens)
@@ -115,7 +114,7 @@ export const POST = async ({ request, platform }) => {
     idToken = await createIdToken({
       sub: account.id,
       aud: client_id,
-      iss: platform!.env.PUBLIC_OIDC_ISSUER,
+      iss: publicEnv.PUBLIC_OIDC_ISSUER,
       nonce: applicationToken.nonce || undefined,
       ...(applicationToken.scopes.includes('profile') && { name: account.name }),
       ...(applicationToken.scopes.includes('email') && { email: account.email }),

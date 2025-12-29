@@ -3,9 +3,9 @@ import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import {
+  db,
   firstOrThrow,
   firstOrThrowWith,
-  getDatabase,
   OAuthApplicationRedirectUris,
   OAuthApplications,
   OAuthApplicationTokens,
@@ -14,14 +14,12 @@ import { filterSupportedScopes, parseScopes, validateScopes } from '$lib/server/
 import { getSession } from '$lib/server/session';
 import { OAuthAuthorizeSchema } from './schema';
 
-export const GET = async ({ cookies, url, platform }) => {
+export const GET = async ({ cookies, url }) => {
   const { client_id, redirect_uri, state, scope } = OAuthAuthorizeSchema.parse(
     Object.fromEntries(url.searchParams),
   );
 
   const requestedScopes = parseScopes(scope);
-
-  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const application = await db
     .select({

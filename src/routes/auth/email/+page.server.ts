@@ -2,14 +2,15 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import dayjs from 'dayjs';
 import { and, eq } from 'drizzle-orm';
 import { setError, superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
+import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
+import { env as publicEnv } from '$env/dynamic/public';
 import {
   AccountEmails,
   AccountEmailVerifications,
+  db,
   first,
   firstOrThrow,
-  getDatabase,
   Sessions,
 } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
@@ -19,14 +20,12 @@ const schema = z.object({
   code: z.string().regex(/^\d{6}$/, '코드 형식이 맞지 않아요'),
 });
 
-export const load = async ({ url, platform }) => {
+export const load = async ({ url }) => {
   const verificationId = url.searchParams.get('verificationId');
 
   if (!verificationId) {
     throw error(400, 'Verification ID is required');
   }
-
-  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const verification = await db
     .select({
@@ -40,7 +39,7 @@ export const load = async ({ url, platform }) => {
 
   const form = await superValidate(
     { verificationId: verification.id, code: url.searchParams.get('code') ?? '' },
-    zod(schema),
+    zod4(schema),
   );
 
   return {
@@ -50,14 +49,12 @@ export const load = async ({ url, platform }) => {
 };
 
 export const actions = {
-  default: async ({ cookies, request, url, platform }) => {
-    const form = await superValidate(request, zod(schema));
+  default: async ({ cookies, request, url }) => {
+    const form = await superValidate(request, zod4(schema));
 
     if (!form.valid) {
       return fail(400, { form });
     }
-
-    const db = await getDatabase(platform!.env.DATABASE_URL);
 
     const verification = await db
       .select({
@@ -122,7 +119,7 @@ export const actions = {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        domain: platform!.env.PUBLIC_COOKIE_DOMAIN,
+        domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
         path: '/',
         expires: dayjs().add(1, 'year').toDate(),
       });

@@ -1,11 +1,10 @@
 import { json } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
-import { firstOrThrow, getDatabase } from '$lib/server/db';
+import { db,firstOrThrow } from '$lib/server/db';
 import { AccountEmails, Accounts } from '$lib/server/db/schema';
 import { getOAuthSession } from '$lib/server/session';
 
-export const GET = async ({ request, platform }) => {
-  const db = await getDatabase(platform!.env.DATABASE_URL);
+export const GET = async ({ request }) => {
 
   const token = request.headers.get('Authorization')?.match(/^Bearer\s+(.*)$/)?.[1] ?? null;
   const session = await getOAuthSession(db, token);

@@ -2,15 +2,16 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import dayjs from 'dayjs';
 import { and, eq, ne } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
+import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
+import { env as publicEnv } from '$env/dynamic/public';
 import {
   AccountEmails,
   AccountEmailVerifications,
   Accounts,
+  db,
   first,
   firstOrThrow,
-  getDatabase,
   Sessions,
 } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
@@ -21,14 +22,12 @@ const schema = z.object({
   privacyAgreed: z.boolean().refine((val) => val === true, '개인정보 처리방침에 동의해주세요'),
 });
 
-export const load = async ({ cookies, platform }) => {
+export const load = async ({ cookies }) => {
   const verificationId = cookies.get('signup_verification');
 
   if (!verificationId) {
     throw redirect(303, '/auth');
   }
-
-  const db = await getDatabase(platform!.env.DATABASE_URL);
 
   const verification = await db
     .select({
@@ -54,7 +53,7 @@ export const load = async ({ cookies, platform }) => {
     throw redirect(303, '/');
   }
 
-  const form = await superValidate(zod(schema));
+  const form = await superValidate(zod4(schema));
 
   return {
     email: verification.accountEmail.email,
@@ -63,8 +62,8 @@ export const load = async ({ cookies, platform }) => {
 };
 
 export const actions = {
-  default: async ({ cookies, request, url, platform }) => {
-    const form = await superValidate(request, zod(schema));
+  default: async ({ cookies, request, url }) => {
+    const form = await superValidate(request, zod4(schema));
 
     if (!form.valid) {
       return fail(400, { form });
@@ -74,8 +73,6 @@ export const actions = {
     if (!verificationId) {
       throw redirect(303, '/auth');
     }
-
-    const db = await getDatabase(platform!.env.DATABASE_URL);
 
     const verification = await db
       .select({
@@ -147,7 +144,7 @@ export const actions = {
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
-        domain: platform!.env.PUBLIC_COOKIE_DOMAIN,
+        domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
         path: '/',
         expires: dayjs().add(1, 'year').toDate(),
       });

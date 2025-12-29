@@ -1,15 +1,15 @@
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { drizzle } from 'drizzle-orm/bun-sql';
+import { env } from '$env/dynamic/private';
 import { DrizzleLogger } from './logger';
 import * as schema from './schema';
 
-export const getDatabase = async (connectionString: string) => {
-  return drizzle(connectionString, {
-    schema,
-    logger: new DrizzleLogger(),
-  });
-};
+// Initialize database connection at module load time
+export const db = drizzle(env.DATABASE_URL, {
+  schema,
+  logger: new DrizzleLogger(),
+});
 
-export type Database = Awaited<ReturnType<typeof getDatabase>>;
+export type Database = typeof db;
 
 export * from './schema';
 export * from './utils';

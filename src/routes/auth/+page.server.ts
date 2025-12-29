@@ -3,36 +3,38 @@ import dayjs from 'dayjs';
 import { eq } from 'drizzle-orm';
 import normalizeEmail from 'normalize-email';
 import { superValidate } from 'sveltekit-superforms';
-import { zod } from 'sveltekit-superforms/adapters';
+import { zod4 } from 'sveltekit-superforms/adapters';
+import z from 'zod';
 import {
   AccountAuthenticators,
   AccountEmails,
   AccountEmailVerifications,
   Accounts,
+  db,
   first,
   firstOrThrow,
-  getDatabase,
 } from '$lib/server/db';
 import { sendEmail } from '$lib/server/email';
 import Login from '$lib/server/email/templates/Login';
 import Signup from '$lib/server/email/templates/Signup';
-import { schema } from './schema';
+
+const schema = z.object({
+  email: z.email(),
+});
 
 export const load = async () => {
-  const form = await superValidate(zod(schema));
+  const form = await superValidate(zod4(schema));
 
   return { form };
 };
 
 export const actions = {
-  default: async ({ request, url, platform }) => {
-    const form = await superValidate(request, zod(schema));
+  default: async ({ request, url }) => {
+    const form = await superValidate(request, zod4(schema));
 
     if (!form.valid) {
       return fail(400, { form });
     }
-
-    const db = await getDatabase(platform!.env.DATABASE_URL!);
 
     const email = form.data.email;
     const normalizedEmail = normalizeEmail(email);
@@ -105,6 +107,8 @@ export const actions = {
         recipient: email,
         body: account ? Login(emailProps) : Signup(emailProps),
       });
+
+      console.log('email sent');
 
       throw redirect(303, `/auth/email?verificationId=${verification.id}`);
     } else {
