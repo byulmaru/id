@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { cn  } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
-	import { cn, type WithElementRef } from "$lib/utils.js";
+import type {WithElementRef} from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
@@ -12,8 +13,8 @@
 
 <div
 	bind:this={ref}
-	data-slot="card-title"
 	class={cn("leading-none font-semibold", className)}
+	data-slot="card-title"
 	{...restProps}
 >
 	{@render children?.()}

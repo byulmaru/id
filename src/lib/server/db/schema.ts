@@ -157,10 +157,15 @@ export const Sessions = pgTable('sessions', {
   id: varchar('id')
     .primaryKey()
     .$defaultFn(() => ulid()),
+  applicationId: varchar('application_id').references(() => OAuthApplications.id),
   accountId: varchar('account_id')
     .notNull()
     .references(() => Accounts.id),
   token: varchar('token').unique().notNull(),
+  scopes: varchar('scopes')
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
   createdAt: datetime('created_at')
     .notNull()
     .default(sql`now()`),

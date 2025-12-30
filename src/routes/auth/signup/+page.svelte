@@ -23,7 +23,7 @@
       <form class="flex flex-col gap-4" method="post" use:enhance>
         <FieldGroup>
           <Field>
-            <FieldLabel for="name">이름</FieldLabel>
+            <FieldLabel for="name">닉네임</FieldLabel>
             <Input
               id="name"
               name="name"

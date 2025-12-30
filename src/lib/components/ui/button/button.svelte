@@ -1,7 +1,9 @@
 <script lang="ts" module>
-	import { cn, type WithElementRef } from "$lib/utils.js";
+	import { tv } from "tailwind-variants";
+	import { cn  } from "$lib/utils.js";
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
-	import { type VariantProps, tv } from "tailwind-variants";
+import type {VariantProps} from "tailwind-variants";
+import type {WithElementRef} from "$lib/utils.js";
 
 	export const buttonVariants = tv({
 		base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -58,10 +60,10 @@
 {#if href}
 	<a
 		bind:this={ref}
-		data-slot="button"
 		class={cn(buttonVariants({ variant, size }), className)}
-		href={disabled ? undefined : href}
 		aria-disabled={disabled}
+		data-slot="button"
+		href={disabled ? undefined : href}
 		role={disabled ? "link" : undefined}
 		tabindex={disabled ? -1 : undefined}
 		{...restProps}
@@ -71,10 +73,10 @@
 {:else}
 	<button
 		bind:this={ref}
-		data-slot="button"
 		class={cn(buttonVariants({ variant, size }), className)}
-		{type}
+		data-slot="button"
 		{disabled}
+		{type}
 		{...restProps}
 	>
 		{@render children?.()}

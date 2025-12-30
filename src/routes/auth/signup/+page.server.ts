@@ -13,10 +13,11 @@ import {
   firstOrThrow,
   Sessions,
 } from '$lib/server/db';
+import { validationSchema } from '$lib/validation';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
 
 const schema = z.object({
-  name: z.string().min(1, '이름을 입력해주세요').max(50, '이름은 50자 이하로 입력해주세요'),
+  name: validationSchema.name,
   termsAgreed: z.boolean().refine((val) => val === true, '서비스 이용약관에 동의해주세요'),
   privacyAgreed: z.boolean().refine((val) => val === true, '개인정보 처리방침에 동의해주세요'),
 });

@@ -35,16 +35,6 @@ export default ts.config(
       'import/no-duplicates': 'error',
       'import/no-named-default': 'error',
       'import/no-unresolved': 'off',
-      'import/extensions': [
-        'error',
-        'never',
-        {
-          checkTypeImports: true,
-          pattern: {
-            svelte: 'always',
-          },
-        },
-      ],
       'simple-import-sort/exports': 'error',
       'simple-import-sort/imports': [
         'error',
