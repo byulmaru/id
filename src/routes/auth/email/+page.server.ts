@@ -3,8 +3,8 @@ import { and, eq } from 'drizzle-orm';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
-import { env as publicEnv } from '$env/dynamic/public';
-import { db, Emails, EmailVerifications, first, firstOrThrow, Sessions } from '$lib/server/db';
+import { createSession } from '$lib/server/auth/createSession';
+import { db, Emails, EmailVerifications, first, firstOrThrow } from '$lib/server/db';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
 
 const schema = z.object({
@@ -78,22 +78,18 @@ export const actions = {
 
     if (verification.purpose === 'SIGN_UP') {
       // 신규 가입자 - verification을 삭제하지 않고 회원가입 페이지로 리다이렉트
+      if (verification.email.accountId) {
+        return setError(form, 'code', '이미 가입된 이메일이에요. 로그인해 주세요.');
+      }
+
       await db.transaction(async (tx) => {
         await tx.delete(EmailVerifications).where(eq(EmailVerifications.id, verification.id));
+        await tx
+          .update(Emails)
+          .set({ verified: true, expiresAt: Temporal.Now.instant().add({ hours: 24 }) })
+          .where(eq(Emails.id, verification.email.id));
 
-        const signupVerification = await tx
-          .insert(EmailVerifications)
-          .values({
-            emailId: verification.email.id,
-            purpose: 'SIGN_UP_VERIFIED',
-            expiresAt: Temporal.Now.instant().add({ hours: 24 }),
-          })
-          .returning({
-            id: EmailVerifications.id,
-          })
-          .then(firstOrThrow);
-
-        cookies.set('signup_verification', signupVerification.id, {
+        cookies.set('signup_verification', verification.email.id, {
           httpOnly: true,
           secure: true,
           sameSite: 'lax',
@@ -105,29 +101,11 @@ export const actions = {
     } else if (verification.purpose === 'LOGIN') {
       // 기존 사용자 - verification 삭제하고 로그인 처리
       await db.transaction(async (tx) => {
+        if (!verification.email.accountId) {
+          return setError(form, 'code', '계정을 찾을 수 없어요.');
+        }
         await tx.delete(EmailVerifications).where(eq(EmailVerifications.id, verification.id));
-
-        const accountId = verification.email.accountId!;
-
-        const session = await tx
-          .insert(Sessions)
-          .values({
-            accountId,
-            token: crypto.randomUUID(),
-          })
-          .returning({
-            token: Sessions.token,
-          })
-          .then(firstOrThrow);
-
-        cookies.set('session', session.token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
-          path: '/',
-          maxAge: 60 * 60 * 24 * 365,
-        });
+        await createSession({ accountId: verification.email.accountId!, cookies, tx });
       });
     }
 

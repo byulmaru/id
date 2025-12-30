@@ -1,6 +1,5 @@
 import { importJWK, SignJWT } from 'jose';
 import { env } from '$env/dynamic/private';
-import type { JWK } from 'jose';
 
 export type IdTokenPayload = {
   sub: string;
@@ -12,11 +11,10 @@ export type IdTokenPayload = {
   [key: string]: unknown;
 };
 
-export const getJwk = (): JWK => JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString());
+export const jwk = JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString());
 
 export const createIdToken = async (payload: IdTokenPayload) => {
   const now = Temporal.Now.instant();
-  const jwk = getJwk();
   const privateKey = await importJWK(jwk, jwk.alg);
 
   return await new SignJWT({

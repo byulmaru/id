@@ -1,5 +1,6 @@
 <script lang="ts">
   import { superForm } from 'sveltekit-superforms';
+  import { resolve } from '$app/paths';
   import { Button } from '$lib/components/ui/button';
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Field, FieldGroup, FieldLabel } from '$lib/components/ui/field';
@@ -16,7 +17,7 @@
     <CardHeader>
       <CardTitle class="text-2xl text-center">회원가입</CardTitle>
       <p class="mt-2 text-sm text-gray-500 text-center">
-        {data.email}로 가입을 진행합니다
+        {data.email.email}로 가입을 진행합니다
       </p>
     </CardHeader>
     <CardContent>
@@ -48,7 +49,7 @@
               />
               <span class="text-sm text-gray-700">
                 <span class="text-red-500">*</span>
-                <a class="text-primary hover:underline" href="/terms" target="_blank">
+                <a class="text-primary hover:underline" href={resolve('/(docs)/terms')} target="_blank">
                   서비스 이용약관
                 </a>에 동의합니다
               </span>
@@ -63,7 +64,7 @@
               />
               <span class="text-sm text-gray-700">
                 <span class="text-red-500">*</span>
-                <a class="text-primary hover:underline" href="/privacy" target="_blank">
+                <a class="text-primary hover:underline" href={resolve('/(docs)/privacy')} target="_blank">
                   개인정보 처리방침
                 </a>에 동의합니다
               </span>
@@ -87,6 +88,8 @@
             모든 약관에 동의합니다
           </span>
         </label>
+
+        <input name="emailId" type="hidden" value={data.email.id} />
 
         <Button 
           class="w-full mt-4" 

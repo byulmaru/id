@@ -1,18 +1,10 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import { and, eq, gt, ne } from 'drizzle-orm';
+import { fail, redirect } from '@sveltejs/kit';
+import { and, eq, isNull, ne } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
-import { env as publicEnv } from '$env/dynamic/public';
-import {
-  Accounts,
-  db,
-  Emails,
-  EmailVerifications,
-  first,
-  firstOrThrow,
-  Sessions,
-} from '$lib/server/db';
+import { createSession } from '$lib/server/auth/createSession';
+import { Accounts, db, Emails, firstOrThrow, firstOrThrowWith } from '$lib/server/db';
 import { validationSchema } from '$lib/validation';
 import { OAuthAuthorizeSchema } from '../../oauth/authorize/schema';
 
@@ -20,49 +12,33 @@ const schema = z.object({
   name: validationSchema.name,
   termsAgreed: z.boolean().refine((val) => val === true, '서비스 이용약관에 동의해주세요'),
   privacyAgreed: z.boolean().refine((val) => val === true, '개인정보 처리방침에 동의해주세요'),
+  emailId: z.string(),
 });
 
 export const load = async ({ cookies }) => {
-  const verificationId = cookies.get('signup_verification');
+  const emailId = cookies.get('signup_verification');
 
-  if (!verificationId) {
+  if (!emailId) {
     throw redirect(303, '/auth');
   }
 
-  const verification = await db
+  const email = await db
     .select({
-      id: EmailVerifications.id,
-      email: {
-        id: Emails.id,
-        email: Emails.email,
-        normalizedEmail: Emails.normalizedEmail,
-        accountId: Emails.accountId,
-      },
+      id: Emails.id,
+      accountId: Emails.accountId,
+      email: Emails.email,
     })
-    .from(EmailVerifications)
-    .innerJoin(Emails, eq(EmailVerifications.emailId, Emails.id))
-    .where(
-      and(
-        eq(EmailVerifications.id, verificationId),
-        eq(EmailVerifications.purpose, 'SIGN_UP_VERIFIED'),
-        gt(EmailVerifications.expiresAt, Temporal.Now.instant()),
-      ),
-    )
-    .then(first);
-
-  if (!verification) {
-    throw redirect(303, '/auth');
-  }
-
-  if (verification.email.accountId) {
-    // 이미 계정이 있는 경우
-    throw redirect(303, '/');
-  }
+    .from(Emails)
+    .where(and(eq(Emails.id, emailId), eq(Emails.verified, true), isNull(Emails.accountId)))
+    .then(firstOrThrowWith(() => redirect(303, '/auth')));
 
   const form = await superValidate(zod4(schema));
 
   return {
-    email: verification.email.email,
+    email: {
+      id: email.id,
+      email: email.email,
+    },
     form,
   };
 };
@@ -75,47 +51,24 @@ export const actions = {
       return fail(400, { form });
     }
 
-    const verificationId = cookies.get('signup_verification');
-    if (!verificationId) {
-      throw error(400, '유효하지 않은 접근입니다');
-    }
-
-    const verification = await db
+    const email = await db
       .select({
-        id: EmailVerifications.id,
-        email: {
-          id: Emails.id,
-          normalizedEmail: Emails.normalizedEmail,
-          accountId: Emails.accountId,
-        },
+        id: Emails.id,
+        accountId: Emails.accountId,
+        normalizedEmail: Emails.normalizedEmail,
       })
-      .from(EmailVerifications)
-      .innerJoin(Emails, eq(EmailVerifications.emailId, Emails.id))
+      .from(Emails)
       .where(
-        and(
-          eq(EmailVerifications.id, verificationId),
-          eq(EmailVerifications.purpose, 'SIGN_UP_VERIFIED'),
-          gt(EmailVerifications.expiresAt, Temporal.Now.instant()),
-        ),
+        and(eq(Emails.id, form.data.emailId), eq(Emails.verified, true), isNull(Emails.accountId)),
       )
-      .then(first);
-
-    if (!verification) {
-      throw error(400, '유효하지 않은 접근입니다');
-    }
-
-    if (verification.email.accountId) {
-      throw redirect(303, '/');
-    }
+      .then(firstOrThrowWith(() => redirect(303, '/auth')));
 
     await db.transaction(async (tx) => {
-      await tx.delete(EmailVerifications).where(eq(EmailVerifications.id, verification.id));
-
       const accountId = await tx
         .insert(Accounts)
         .values({
           name: form.data.name,
-          primaryEmailId: verification.email.id,
+          primaryEmailId: email.id,
         })
         .returning({
           id: Accounts.id,
@@ -125,39 +78,16 @@ export const actions = {
 
       await tx
         .delete(Emails)
-        .where(
-          and(
-            eq(Emails.normalizedEmail, verification.email.normalizedEmail),
-            ne(Emails.id, verification.email.id),
-          ),
-        );
+        .where(and(eq(Emails.normalizedEmail, email.normalizedEmail), ne(Emails.id, email.id)));
 
       await tx
         .update(Emails)
         .set({
           accountId,
         })
-        .where(eq(Emails.id, verification.email.id));
+        .where(eq(Emails.id, email.id));
 
-      const session = await tx
-        .insert(Sessions)
-        .values({
-          accountId,
-          token: crypto.randomUUID(),
-        })
-        .returning({
-          token: Sessions.token,
-        })
-        .then(firstOrThrow);
-
-      cookies.set('session', session.token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        domain: publicEnv.PUBLIC_COOKIE_DOMAIN,
-        path: '/',
-        maxAge: 60 * 60 * 24 * 365,
-      });
+      await createSession({ accountId, cookies, tx });
 
       // 회원가입 완료로 쿠키 삭제
       cookies.delete('signup_verification', {

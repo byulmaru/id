@@ -43,14 +43,16 @@ export const Emails = pgTable(
     accountId: varchar('account_id').references(() => Accounts.id),
     email: varchar('email').notNull(),
     normalizedEmail: varchar('normalized_email').notNull(),
+    verified: boolean('verified').notNull(),
     createdAt: datetime('created_at')
       .notNull()
       .default(sql`now()`),
+    expiresAt: datetime('expires_at'),
   },
   (t) => [
     uniqueIndex()
       .on(t.normalizedEmail)
-      .where(sql`${t.accountId} IS NOT NULL`),
+      .where(sql`${t.verified} IS true`),
   ],
 );
 
