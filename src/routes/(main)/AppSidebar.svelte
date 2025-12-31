@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { UserIcon } from '@lucide/svelte';
+  import { MailIcon, UserIcon } from '@lucide/svelte';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import * as Sidebar from '$lib/components/ui/sidebar';
@@ -27,10 +27,10 @@
         <Sidebar.Menu>
           <Sidebar.MenuItem>
             <Sidebar.MenuButton
-              isActive={isActive('/profile')}
+              isActive={isActive('/settings/profile')}
             >
               {#snippet child({ props })}
-              <a href={resolve('/(main)/profile')} {...props}>
+              <a href={resolve('/(main)/settings/profile')} {...props}>
                 <UserIcon/>
                 <span>프로필</span>
               </a>
@@ -38,18 +38,18 @@
               
             </Sidebar.MenuButton>
           </Sidebar.MenuItem>
-          <!-- <Sidebar.MenuItem>
+          <Sidebar.MenuItem>
             <Sidebar.MenuButton
-              isActive={isActive('/email')}
+              isActive={isActive('/settings/email')}
             >
               {#snippet child({ props })}
-              <a href="/email" {...props}>
+              <a href={resolve('/(main)/settings/email')} {...props}>
                 <MailIcon/>
                 <span>이메일</span>
               </a>
               {/snippet}
             </Sidebar.MenuButton>
-          </Sidebar.MenuItem> -->
+          </Sidebar.MenuItem>
           </Sidebar.Menu>
       </Sidebar.GroupContent>
     </Sidebar.Group>

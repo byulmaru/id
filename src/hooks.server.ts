@@ -18,6 +18,7 @@ export const handle = async ({ event, resolve }) => {
           id: Accounts.id,
           name: Accounts.name,
           primaryEmail: Emails.email,
+          primaryEmailId: Accounts.primaryEmailId,
         })
         .from(Accounts)
         .innerJoin(Emails, eq(Accounts.primaryEmailId, Emails.id))
@@ -34,6 +35,7 @@ export const handle = async ({ event, resolve }) => {
             id: account.id,
             name: account.name,
             primaryEmail: account.primaryEmail,
+            primaryEmailId: account.primaryEmailId,
           },
         }
       : null;

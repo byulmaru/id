@@ -10,6 +10,7 @@ declare global {
           id: string;
           name: string;
           primaryEmail: string;
+          primaryEmailId: string;
         };
       } | null;
     }

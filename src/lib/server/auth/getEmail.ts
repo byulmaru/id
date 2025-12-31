@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import normalizeEmail from 'normalize-email';
 import { db, first, firstOrThrow } from '../db';
 import { Emails } from '../db/schema';
@@ -7,7 +7,9 @@ export const getEmail = async (emailAddress: string) => {
   const email = await db
     .select()
     .from(Emails)
-    .where(and(eq(Emails.normalizedEmail, normalizeEmail(emailAddress)), eq(Emails.verified, true)))
+    .where(
+      and(eq(Emails.normalizedEmail, normalizeEmail(emailAddress)), isNotNull(Emails.verifiedAt)),
+    )
     .then(first);
 
   if (email) {
@@ -19,7 +21,6 @@ export const getEmail = async (emailAddress: string) => {
     .values({
       email: emailAddress,
       normalizedEmail: normalizeEmail(emailAddress),
-      verified: false,
     })
     .returning()
     .then(firstOrThrow);

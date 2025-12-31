@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { and, eq, isNull, ne } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull, ne } from 'drizzle-orm';
 import { superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ export const load = async ({ cookies }) => {
       email: Emails.email,
     })
     .from(Emails)
-    .where(and(eq(Emails.id, emailId), eq(Emails.verified, true), isNull(Emails.accountId)))
+    .where(and(eq(Emails.id, emailId), isNotNull(Emails.verifiedAt), isNull(Emails.accountId)))
     .then(firstOrThrowWith(() => redirect(303, '/auth')));
 
   const form = await superValidate(zod4(schema));
@@ -59,7 +59,11 @@ export const actions = {
       })
       .from(Emails)
       .where(
-        and(eq(Emails.id, form.data.emailId), eq(Emails.verified, true), isNull(Emails.accountId)),
+        and(
+          eq(Emails.id, form.data.emailId),
+          isNotNull(Emails.verifiedAt),
+          isNull(Emails.accountId),
+        ),
       )
       .then(firstOrThrowWith(() => redirect(303, '/auth')));
 

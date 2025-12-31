@@ -5,12 +5,13 @@ import { Temporal } from 'temporal-polyfill';
 type Props = {
   origin: string;
   email: string;
+  name: string;
   code: string;
   verificationId: string;
   expiresAt: Temporal.Instant;
 };
 
-const Email = ({ origin, email, code, verificationId, expiresAt }: Props) => {
+const Email = ({ origin, email, name, code, verificationId, expiresAt }: Props) => {
   const formatted = expiresAt.toZonedDateTimeISO('Asia/Seoul').toLocaleString();
 
   return (
@@ -19,6 +20,7 @@ const Email = ({ origin, email, code, verificationId, expiresAt }: Props) => {
       <Preview>인증번호 {code}</Preview>
       <Body>
         <Container>
+          <Text>안녕하세요, {name}님.</Text>
           <Text>별마루에 {email} 이메일로 로그인하려고 해요.</Text>
           <Button
             style={{
@@ -46,6 +48,7 @@ const Email = ({ origin, email, code, verificationId, expiresAt }: Props) => {
 Email.PreviewProps = {
   origin: 'http://localhost:5173',
   email: 'byulmaru@example.com',
+  name: '테스트',
   code: '12345678',
   verificationId: 'asdf',
   expiresAt: Temporal.Now.instant().add({ minutes: 10 }),

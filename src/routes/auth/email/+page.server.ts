@@ -86,7 +86,7 @@ export const actions = {
         await tx.delete(EmailVerifications).where(eq(EmailVerifications.id, verification.id));
         await tx
           .update(Emails)
-          .set({ verified: true, expiresAt: Temporal.Now.instant().add({ hours: 24 }) })
+          .set({ verifiedAt: Temporal.Now.instant() })
           .where(eq(Emails.id, verification.email.id));
 
         cookies.set('signup_verification', verification.email.id, {

@@ -43,23 +43,23 @@ export const Emails = pgTable(
     accountId: varchar('account_id').references(() => Accounts.id),
     email: varchar('email').notNull(),
     normalizedEmail: varchar('normalized_email').notNull(),
-    verified: boolean('verified').notNull(),
     createdAt: datetime('created_at')
       .notNull()
       .default(sql`now()`),
-    expiresAt: datetime('expires_at'),
+    verifiedAt: datetime('verified_at'),
   },
   (t) => [
     uniqueIndex()
       .on(t.normalizedEmail)
-      .where(sql`${t.verified} IS true`),
+      .where(sql`${t.verifiedAt} IS NOT NULL`),
+    uniqueIndex().on(t.accountId, t.normalizedEmail),
   ],
 );
 
 export const EmailVerificationPurpose = pgEnum('_email_verification_purpose', [
   'LOGIN',
   'SIGN_UP',
-  'SIGN_UP_VERIFIED',
+  'ADD_EMAIL',
 ]);
 export const EmailVerifications = pgTable('email_verifications', {
   id: varchar('id')

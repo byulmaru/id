@@ -13,7 +13,7 @@
       <Sidebar.Trigger />
       <Separator class="me-2 data-[orientation=vertical]:h-4" orientation="vertical" />
     </header>
-    <main class="w-full max-w-5xl mx-auto my-8">
+    <main class="w-full max-w-5xl mx-auto my-4 p-2">
       {@render children()}
     </main>
   </Sidebar.Inset>
