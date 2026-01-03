@@ -13,14 +13,6 @@ export const init = async () => {
   });
 };
 
-const gracefulShutdown = async () => {
-  await db.$client.close();
-  process.exit(0);
-};
-
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
-
 export const handle = async ({ event, resolve }) => {
   let deviceId = event.cookies.get('deviceid');
   if (!deviceId) {

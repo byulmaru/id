@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from "$lib/utils.js";
+	import { cn  } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
+import type {WithElementRef} from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
@@ -12,8 +13,8 @@
 
 <div
 	bind:this={ref}
-	data-slot="item-title"
 	class={cn("flex w-fit items-center gap-2 text-sm leading-snug font-medium", className)}
+	data-slot="item-title"
 	{...restProps}
 >
 	{@render children?.()}

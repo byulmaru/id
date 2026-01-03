@@ -1,4 +1,4 @@
-import { Body, Button, Container, Head, Html, Preview, Text } from '@react-email/components';
+import { Body, Container, Head, Html, Text } from '@react-email/components';
 import React from 'react';
 import { Temporal } from 'temporal-polyfill';
 

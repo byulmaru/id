@@ -10,7 +10,10 @@ import { env as publicEnv } from '$env/dynamic/public';
 import { createSession } from '$lib/server/auth/createSession';
 import { AccountAuthenticators, db, Emails, first } from '$lib/server/db';
 import { getChallenge, saveChallenge } from './challenge.server';
-import { filterPasskeyCredentialsAndParse, passkeyAccountAuthenticatorCredentialSchema } from './types';
+import {
+  filterPasskeyCredentialsAndParse,
+  passkeyAccountAuthenticatorCredentialSchema,
+} from './types';
 
 const allowCredentialsSchema = z
   .object({
@@ -93,8 +96,6 @@ export const verifyPasskeyAuthentication = command(
       throw error(400, { message: 'verification_failed' });
     }
 
-    console.log(credential.credential.publicKey);
-
     const verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge,
@@ -103,7 +104,7 @@ export const verifyPasskeyAuthentication = command(
       requireUserVerification: false,
       credential: {
         id: credential.key,
-        publicKey: Uint8Array.fromBase64(credential.credential.publicKey),
+        publicKey: Buffer.from(credential.credential.publicKey, 'base64'),
         counter: credential.credential.counter,
         transports: credential.credential.transports,
       },

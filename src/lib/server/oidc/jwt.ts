@@ -1,4 +1,5 @@
 import { importJWK, SignJWT } from 'jose';
+import { Temporal } from 'temporal-polyfill';
 import { env } from '$env/dynamic/private';
 
 export type IdTokenPayload = {
@@ -11,7 +12,7 @@ export type IdTokenPayload = {
   [key: string]: unknown;
 };
 
-export const jwk = JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString());
+export const jwk = JSON.parse(Buffer.from(env.OIDC_JWK, 'base64').toString() || '{}');
 
 export const createIdToken = async (payload: IdTokenPayload) => {
   const now = Temporal.Now.instant();

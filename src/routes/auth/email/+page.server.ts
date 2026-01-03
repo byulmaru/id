@@ -2,6 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { and, eq } from 'drizzle-orm';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
+import { Temporal } from 'temporal-polyfill';
 import { z } from 'zod';
 import { createSession } from '$lib/server/auth/createSession';
 import { db, Emails, EmailVerifications, first, firstOrThrow } from '$lib/server/db';

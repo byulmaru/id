@@ -3,6 +3,7 @@ import { and, eq, isNotNull, ne, or } from 'drizzle-orm';
 import normalizeEmail from 'normalize-email';
 import { setError, superValidate } from 'sveltekit-superforms';
 import { zod4 } from 'sveltekit-superforms/adapters';
+import { Temporal } from 'temporal-polyfill';
 import { sendEmailVerification } from '$lib/server/auth/sendEmailVerification';
 import { Accounts, db, Emails, EmailVerifications, first, firstOrThrow } from '$lib/server/db';
 import { sendEmail } from '$lib/server/email';
@@ -97,7 +98,6 @@ export const actions = {
 
     const form = await superValidate(request, zod4(verifyEmailSchema));
     if (!form.valid) {
-      console.log(form.data);
       return fail(400, { form });
     }
 

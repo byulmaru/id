@@ -1,14 +1,14 @@
 # Build stage
-FROM oven/bun:1 AS base
+FROM node:24-alpine AS base
 WORKDIR /app
 
 # Install dependencies
 FROM base AS install
-RUN bun install
-COPY package.json bun.lock* ./
+RUN pnpm install
+COPY package.json pnpm-lock.yaml ./
 
 # Install production dependencies
-RUN bun install --frozen-lockfile --production
+RUN pnpm install --frozen-lockfile --production
 
 # Build stage
 FROM base AS build
@@ -19,7 +19,7 @@ COPY . .
 ENV PUBLIC_OIDC_ISSUER=https://id.byulmaru.co
 ENV PUBLIC_COOKIE_DOMAIN=.byulmaru.co
 
-RUN bun run build
+RUN pnpm run build
 
 # Production stage
 FROM base AS release
@@ -39,4 +39,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/.well-known/openid_configuration || exit 1
 
 # Run the application
-CMD ["bun", "run", "start"]
+CMD ["pnpm", "run", "start"]

@@ -11,9 +11,9 @@
 </script>
 
 <Separator
-	bind:ref
+	class={cn("my-0", className)}
 	data-slot="item-separator"
 	orientation="horizontal"
-	class={cn("my-0", className)}
+	bind:ref
 	{...restProps}
 />

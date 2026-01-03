@@ -1,5 +1,5 @@
 import { getLogger } from '@logtape/drizzle-orm';
-import { drizzle } from 'drizzle-orm/bun-sql';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { env } from '$env/dynamic/private';
 import * as schema from './schema';
 import type { PgDatabase, PgTransaction } from 'drizzle-orm/pg-core';

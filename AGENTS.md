@@ -5,8 +5,8 @@
 ## 패키지 관리
 
 - **절대 package.json을 직접 수정하지 말 것**
-- 패키지 설치는 반드시 `bun add -D` 명령어 사용 (build될것이므로 모든 의존성은 devDependencies)
-- 패키지 제거는 `bun remove` 명령어 사용
+- 패키지 설치는 반드시 `pnpm add -D` 명령어 사용 (build될것이므로 모든 의존성은 devDependencies)
+- 패키지 제거는 `pnpm remove` 명령어 사용
 
 ## 데이터베이스 스키마
 
@@ -95,7 +95,7 @@ const user = await db.insert(Users).values({ nickname: 'test' }).returning().the
 - shadcn 컴포넌트 설치 예시:
 
 ```bash
-bun x shadcn-svelte@latest add $componentName
+pnpm dlx shadcn-svelte@latest add $componentName
 ```
 
 ## 응답 언어
