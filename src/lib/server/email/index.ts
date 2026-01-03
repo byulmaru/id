@@ -20,8 +20,6 @@ type SendEmailParams = {
 };
 
 export const sendEmail = async ({ subject, recipient, body }: SendEmailParams) => {
-  console.log('transport', transport.config);
-
   const email = createMessage({
     from: 'Byulmaru ID <noreply@byulmaru.co>',
     to: recipient,

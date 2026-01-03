@@ -13,6 +13,7 @@ declare global {
           primaryEmailId: string;
         };
       } | null;
+      deviceId: string;
     }
   }
 }

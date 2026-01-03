@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from "$lib/utils.js";
+	import { cn  } from "$lib/utils.js";
 	import type { HTMLAttributes } from "svelte/elements";
+import type {WithElementRef} from "$lib/utils.js";
 
 	let {
 		ref = $bindable(null),
@@ -12,8 +13,8 @@
 
 <tbody
 	bind:this={ref}
-	data-slot="table-body"
 	class={cn("[&_tr:last-child]:border-0", className)}
+	data-slot="table-body"
 	{...restProps}
 >
 	{@render children?.()}

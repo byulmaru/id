@@ -10,8 +10,8 @@
 </script>
 
 <DialogPrimitive.Description
-	bind:ref
-	data-slot="dialog-description"
 	class={cn("text-muted-foreground text-sm", className)}
+	data-slot="dialog-description"
+	bind:ref
 	{...restProps}
 />

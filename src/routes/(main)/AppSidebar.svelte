@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MailIcon, UserIcon } from '@lucide/svelte';
+  import { KeyRoundIcon, MailIcon, UserIcon } from '@lucide/svelte';
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import * as Sidebar from '$lib/components/ui/sidebar';
@@ -53,11 +53,11 @@
           </Sidebar.Menu>
       </Sidebar.GroupContent>
     </Sidebar.Group>
-    <!-- <Sidebar.Group>
+    <Sidebar.Group>
       <Sidebar.GroupLabel>보안 설정</Sidebar.GroupLabel>
       <Sidebar.GroupContent>
         <Sidebar.Menu>
-          <Sidebar.MenuItem>
+          <!-- <Sidebar.MenuItem>
             <Sidebar.MenuButton
               isActive={isActive('/password')}
             >
@@ -68,20 +68,20 @@
               </a>
               {/snippet}
             </Sidebar.MenuButton>
-          </Sidebar.MenuItem>
+          </Sidebar.MenuItem> -->
         <Sidebar.MenuItem>
           <Sidebar.MenuButton
             isActive={isActive('/passkey')}
           >
             {#snippet child({ props })}
-            <a href="/passkey" {...props}>
-              <KeyIcon/>
+            <a href={resolve('/(main)/settings/passkey')} {...props}>
+              <KeyRoundIcon/>
               <span>패스키</span>
             </a>
             {/snippet}
           </Sidebar.MenuButton>
         </Sidebar.MenuItem>
-        <Sidebar.MenuItem>
+        <!-- <Sidebar.MenuItem>
           <Sidebar.MenuButton
             isActive={isActive('/passkey')}
           >
@@ -104,10 +104,10 @@
             </a>
             {/snippet}
           </Sidebar.MenuButton>
-        </Sidebar.MenuItem>
+        </Sidebar.MenuItem> -->
       </Sidebar.Menu>
       </Sidebar.GroupContent>
-    </Sidebar.Group> -->
+    </Sidebar.Group>
   </Sidebar.Content>
   <Sidebar.Rail />
 </Sidebar.Root>

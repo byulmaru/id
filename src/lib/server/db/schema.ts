@@ -1,8 +1,9 @@
 import { sql } from 'drizzle-orm';
-import { boolean, json, pgEnum, pgTable, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
+import { boolean, jsonb, pgEnum, pgTable, unique, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
 import { ulid } from 'ulidx';
 import { datetime } from './types';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
+import type { PasskeyAccountAuthenticatorCredential } from '$lib/passkey/types';
 
 export const AccountState = pgEnum('_account_state', ['ACTIVE', 'DELETED']);
 export const Accounts = pgTable('accounts', {
@@ -19,19 +20,41 @@ export const Accounts = pgTable('accounts', {
     .default(sql`now()`),
 });
 
-export const AccountAuthenticatorKind = pgEnum('_account_authenticator_kind', ['PASSWORD']);
-export const AccountAuthenticators = pgTable('account_authenticators', {
+export type AccountAuthenticatorCredential = PasskeyAccountAuthenticatorCredential;
+export const AccountAuthenticatorKind = pgEnum('_account_authenticator_kind', [
+  'PASSWORD',
+  'PASSKEY',
+]);
+export const AccountAuthenticators = pgTable(
+  'account_authenticators',
+  {
+    id: varchar('id')
+      .primaryKey()
+      .$defaultFn(() => ulid()),
+    accountId: varchar('account_id')
+      .notNull()
+      .references(() => Accounts.id),
+    kind: AccountAuthenticatorKind('kind').notNull(),
+    key: varchar('key'),
+    credential: jsonb('credential').notNull().$type<AccountAuthenticatorCredential>(),
+    name: varchar('name'),
+    createdAt: datetime('created_at')
+      .notNull()
+      .default(sql`now()`),
+  },
+  (t) => [unique().on(t.accountId, t.key).nullsNotDistinct()],
+);
+
+export const Challenges = pgTable('challenges', {
   id: varchar('id')
     .primaryKey()
     .$defaultFn(() => ulid()),
-  accountId: varchar('account_id')
-    .notNull()
-    .references(() => Accounts.id),
-  kind: AccountAuthenticatorKind('kind').notNull(),
-  credential: json('credential').notNull(),
+  deviceId: varchar('device_id').notNull().unique(),
+  challenge: varchar('challenge').notNull(),
   createdAt: datetime('created_at')
     .notNull()
     .default(sql`now()`),
+  expiresAt: datetime('expires_at').notNull(),
 });
 
 export const Emails = pgTable(

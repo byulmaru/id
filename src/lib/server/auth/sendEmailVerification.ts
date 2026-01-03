@@ -19,24 +19,41 @@ export const sendEmailVerification = async (
     ? await db.select().from(Accounts).where(eq(Accounts.id, email.accountId)).then(first)
     : null;
 
-  return await db.transaction(async (tx) =>
-    match(purpose)
-      .with('LOGIN', async () => {
-        const verification = await tx
-          .insert(EmailVerifications)
-          .values({
-            emailId: email.id,
-            purpose: 'LOGIN',
-            code: token,
-            expiresAt: Temporal.Now.instant().add({ minutes: 10 }),
-          })
-          .returning({ id: EmailVerifications.id, expiresAt: EmailVerifications.expiresAt })
-          .then(firstOrThrow);
+  return await db.transaction(async (tx) => {
+    const expiresAt = match(purpose)
+      .with('LOGIN', 'SIGN_UP', () => Temporal.Now.instant().add({ minutes: 10 }))
+      .with('ADD_EMAIL', () => Temporal.Now.instant().add({ hours: 1 }))
+      .exhaustive();
 
-        await sendEmail({
-          subject: '별마루 통합 계정 로그인하기',
-          recipient: email.email,
-          body: Login({
+    const verification = await tx
+      .insert(EmailVerifications)
+      .values({
+        emailId: email.id,
+        purpose,
+        code: token,
+        expiresAt,
+      })
+      .onConflictDoUpdate({
+        target: [EmailVerifications.emailId],
+        set: {
+          purpose,
+          code: token,
+          expiresAt,
+        },
+      })
+      .returning({ id: EmailVerifications.id, expiresAt: EmailVerifications.expiresAt })
+      .then(firstOrThrow);
+
+    await sendEmail({
+      subject: match(purpose)
+        .with('LOGIN', () => '별마루 통합 계정 로그인하기')
+        .with('SIGN_UP', () => '별마루 통합 계정 가입하기')
+        .with('ADD_EMAIL', () => '별마루 통합 계정 이메일 추가 인증')
+        .exhaustive(),
+      recipient: email.email,
+      body: match(purpose)
+        .with('LOGIN', () =>
+          Login({
             origin: siteOrigin,
             email: email.email,
             name: account!.name,
@@ -44,61 +61,27 @@ export const sendEmailVerification = async (
             verificationId: verification.id,
             expiresAt: verification.expiresAt,
           }),
-        });
-
-        return verification;
-      })
-      .with('SIGN_UP', async () => {
-        const verification = await tx
-          .insert(EmailVerifications)
-          .values({
-            emailId: email.id,
-            purpose: 'SIGN_UP',
-            code: token,
-            expiresAt: Temporal.Now.instant().add({ minutes: 10 }),
-          })
-          .returning({ id: EmailVerifications.id, expiresAt: EmailVerifications.expiresAt })
-          .then(firstOrThrow);
-
-        await sendEmail({
-          subject: '별마루 통합 계정 가입하기',
-          recipient: email.email,
-          body: Signup({
+        )
+        .with('SIGN_UP', () =>
+          Signup({
             origin: siteOrigin,
             email: email.email,
             code: token,
             verificationId: verification.id,
             expiresAt: verification.expiresAt,
           }),
-        });
-
-        return verification;
-      })
-      .with('ADD_EMAIL', async () => {
-        const verification = await tx
-          .insert(EmailVerifications)
-          .values({
-            emailId: email.id,
-            purpose: 'ADD_EMAIL',
-            code: token,
-            expiresAt: Temporal.Now.instant().add({ hours: 1 }),
-          })
-          .returning({ id: EmailVerifications.id, expiresAt: EmailVerifications.expiresAt })
-          .then(firstOrThrow);
-
-        await sendEmail({
-          subject: '별마루 통합 계정 이메일 추가 인증',
-          recipient: email.email,
-          body: AddEmailVerification({
+        )
+        .with('ADD_EMAIL', () =>
+          AddEmailVerification({
             email: email.email,
             code: token,
             name: account!.name,
             expiresAt: verification.expiresAt,
           }),
-        });
+        )
+        .exhaustive(),
+    });
 
-        return verification;
-      })
-      .exhaustive(),
-  );
+    return verification;
+  });
 };
